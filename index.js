@@ -15,8 +15,8 @@ async function main() {
 
     // Chains mapping
     const chains = {
-        1: {name: 'Ethereum Mainnet', contract: ''},
-        5: {name: 'Goerli Testnet', contract: ''},
+        1: {name: 'Ethereum Mainnet', module_id: '1'},
+        5: {name: 'Goerli Testnet', module_id: '1'},
         1337803: {name: 'Zhejiang Testnet', module_id: '1'}
     };
 

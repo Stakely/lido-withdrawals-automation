@@ -3,10 +3,14 @@ const axios = require('axios');
 async function fetchValidatorsData(kapiUrl, moduleId, operatorId, percentage) {
   try {
 
-    const response = await axios.get(
-      `${kapiUrl}/v1/modules/${moduleId}/validators/validator-exits-to-prepare/${operatorId}?percent=${percentage}`
-    );
-
+	const completeKapiUrl = `${kapiUrl}/v1/modules/${moduleId}/validators/validator-exits-to-prepare/${operatorId}?percent=${percentage}`;
+    const response = await axios.get(completeKapiUrl, {
+		headers: {
+			'Content-Type': 'application/json',
+			Accept: 'application/json',
+		},
+	});
+		
 		let kapiJsonResponse = response.data;
 
 		// Check validators data length
@@ -29,7 +33,7 @@ async function fetchValidatorsData(kapiUrl, moduleId, operatorId, percentage) {
 		return kapiJsonResponse;
 
   } catch (error) {
-    throw new Error('Failed to fetch data from the KAPI (Url: ' + kapiUrl + '). ' + error.message);
+    throw new Error('Failed to fetch data from the KAPI (Url: ' + completeKapiUrl + '). ' + error.message);
   }
 }
 

@@ -70,6 +70,7 @@ async function createWithdrawalMessage(validators, epoch, remoteSignerUrl, beaco
     // Foreach validator, request signature from remote signer
     let i = 0;
     let okSignatures = 0;
+	let completeRemoteSignerUrl = null;
     for (const validator of validators) {
 
         i++;
@@ -88,10 +89,12 @@ async function createWithdrawalMessage(validators, epoch, remoteSignerUrl, beaco
             }
         }
 
+		completeRemoteSignerUrl = remoteSignerUrl + '/api/v1/eth2/sign/' + validator.key;
+
         try {
             
 			// Request signature from remote signer
-			const remoteSignerResponse = await fetch(remoteSignerUrl + '/api/v1/eth2/sign/' + validator.key, {
+			const remoteSignerResponse = await fetch(completeRemoteSignerUrl, {
 				method: 'POST',
 				headers: {
 				'Content-Type': 'application/json',
@@ -125,7 +128,12 @@ async function createWithdrawalMessage(validators, epoch, remoteSignerUrl, beaco
             console.log(signature, '(Validator #' + validator.validatorIndex + ')');
         
         } catch (error) {
-            throw new Error('Failed to fetch data from the remote signer (Url: ' + remoteSignerUrl + '). ' + error.message);
+            throw new Error(
+				'Failed to fetch data from the remote signer (Url: ' + remoteSignerUrl + '). ' + error.message + 
+				'\n Complete URL: ' + remoteSignerUrl + '/api/v1/eth2/sign/' + validator.key +
+				'\n Body: ' + JSON.stringify(body)
+			);
+				
         }        
         
     }

@@ -48,6 +48,10 @@ function operatorIdValidation(value) {
     return true;
 }
 
+function booleanValidation(value) {
+    return value === 'true' || value === 'false' ? true : 'Please enter a valid boolean value (true or false).';
+}
+
 // Exportamos las funciones
 module.exports = {
     percentageValidation,
@@ -56,4 +60,5 @@ module.exports = {
     chainIdValidation,
     operatorIdValidation,
     urlValidation,
+    booleanValidation
 };

@@ -1,5 +1,5 @@
 const inquirer = require('inquirer');
-const { percentageValidation, passwordFileValidation, outputFolderValidation, chainIdValidation, operatorIdValidation, urlValidation } = require('./functions/validations');
+const { percentageValidation, passwordFileValidation, outputFolderValidation, chainIdValidation, operatorIdValidation, urlValidation, booleanValidation } = require('./functions/validations');
 const { fetchValidatorsData } = require('./functions/fetchValidatorsData');
 const { createWithdrawalMessage } = require('./functions/createWithdrawalMessage');
 
@@ -30,6 +30,7 @@ async function main() {
         chainId: process.env.CHAIN_ID,
         operatorId: process.env.OPERATOR_ID,
         beaconNodeUrl: process.env.BEACON_NODE_URL,
+		skipRemoteSignerSslVerification: process.env.SKIP_REMOTE_SIGNER_SSL_VERIFICATION,
     };
 
     // Validate environment variables
@@ -43,6 +44,7 @@ async function main() {
             chainId: chainIdValidation,
             operatorId: operatorIdValidation,
             beaconNodeUrl: urlValidation,
+			skipRemoteSignerSslVerification: booleanValidation,
         }[key];
 
         const validationResult = validationFunction(value);
@@ -127,6 +129,16 @@ async function main() {
         });
     }
 
+	if (!env.skipRemoteSignerSslVerification) {
+		questions.push({
+			type: 'confirm',
+			name: 'skipRemoteSignerSslVerification',
+			message: 'Do you want to skip the SSL verification for the remote signer?',
+			validate: booleanValidation,
+			default: false,
+		});
+	}
+
     const answers = await inquirer.prompt(questions);
 
     // Combine environment variables and answers
@@ -139,6 +151,7 @@ async function main() {
         chainId: env.chainId || answers.chainId,
         operatorId: env.operatorId || answers.operatorId,
         beaconNodeUrl: env.beaconNodeUrl || answers.beaconNodeUrl,
+		skipRemoteSignerSslVerification: env.skipRemoteSignerSslVerification || answers.skipRemoteSignerSslVerification,
     };
 
     // Get validators data from Kapi
@@ -159,6 +172,7 @@ async function main() {
         kapiJsonResponse.meta.clBlockSnapshot.epoch, // Epoch from Kapi
         params.remoteSignerUrl, // Remote signer URL
         params.beaconNodeUrl, // Beacon node URL
+		params.skipRemoteSignerSslVerification, // Skip remote signer SSL verification
     );
 
     console.log('\n');

@@ -2,7 +2,7 @@ const axios = require('axios');
 
 async function fetchValidatorsData(kapiUrl, moduleId, operatorId, percentage) {
 
-	const completeKapiUrl = `${kapiUrl}/v1/modules/${moduleId}/validators/validator-exits-to-prepare/${operatorId}?percent=${percentage}`;
+	const completeKapiUrl = `${kapiUrl}/v1/modules/${moduleId}/validators/exits_presign/${operatorId}?percent=${percentage}`;
 
 	try {
 		const response = await axios.get(completeKapiUrl, {

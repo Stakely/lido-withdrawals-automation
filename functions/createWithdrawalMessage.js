@@ -84,7 +84,7 @@ async function createWithdrawalMessage(validators, epoch, remoteSignerUrl, beaco
                 genesis_validators_root,
             },
             voluntary_exit: {
-                epoch: epoch,
+                epoch: String(epoch),
                 validator_index: String(validator.validatorIndex),
             }
         }

@@ -98,7 +98,7 @@ async function createWithdrawalMessage(validators, epoch, remoteSignerUrl, beaco
 				validateStatus: function (status) {
 					return status === 200 || status === 404;
 				},
-				httpsAgent: skipRemoteSignerSslVerification ? new https.Agent({ rejectUnauthorized: false }) : undefined
+				httpsAgent: skipRemoteSignerSslVerification ? new https.Agent({ rejectUnauthorized: false, checkServerIdentity: undefined }) : undefined
 			});
 			
         

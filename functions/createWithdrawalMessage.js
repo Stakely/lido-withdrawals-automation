@@ -89,26 +89,37 @@ async function createWithdrawalMessage(validators, epoch, remoteSignerUrl, beaco
         }
 
         try {
-            // Request signature from remote signer
-            const remoteSignerResponse = await axios.post(remoteSignerUrl + '/api/v1/eth2/sign/' + validator.key, body, {
+            
+			// Request signature from remote signer
+			const remoteSignerResponse = await fetch(remoteSignerUrl + '/api/v1/eth2/sign/' + validator.key, {
+				method: 'POST',
 				headers: {
-					'Content-Type': 'application/json',
-					Accept: 'application/json',
+				'Content-Type': 'application/json',
+				Accept: 'application/json',
 				},
-				validateStatus: function (status) {
-					return status === 200 || status === 404;
-				},
-				httpsAgent: skipRemoteSignerSslVerification ? new https.Agent({ rejectUnauthorized: false, checkServerIdentity: undefined }) : undefined
+				body: JSON.stringify(body),
+				agent: skipRemoteSignerSslVerification
+				? new https.Agent({
+					rejectUnauthorized: false,
+					checkServerIdentity: () => undefined,
+					})
+				: undefined,
 			});
 			
-        
             // Key is not found in remote signer
             if (remoteSignerResponse.status === 404) {
                 console.log('Key not found in remote signer. ' +  '(Validator #' + validator.validatorIndex + ')' + ' Skipping...');
                 continue;
             }
+
+			// Status code is not 200
+			if (remoteSignerResponse.status !== 200) {
+				throw new Error('Remote signer returned status code ' + remoteSignerResponse.status);
+			}
                 
-            const signature = remoteSignerResponse.data.signature;
+			const remoteSignerResponseBody = await remoteSignerResponse.json();
+
+            const signature = remoteSignerResponseBody.signature;
             okSignatures++;
         
             console.log(signature, '(Validator #' + validator.validatorIndex + ')');

@@ -16,15 +16,13 @@ async function encryptMessages(signatures, outputFolder, passwordFile){
         const fullMessage = {
             "exit": {
                 "message": {
-                    "epoch": signature.epoch,
-                    "validator_index": signature.validator_index
+                    "epoch": String(signature.epoch),
+                    "validator_index": String(signature.validator_index)
                 },
                 "signature": signature.signature
             },
             "fork_version": signature.fork_version
         };
-
-        console.log(fullMessage);
 
         // Full message to JSON
         const fullMessageJson = JSON.stringify(fullMessage);
@@ -32,6 +30,8 @@ async function encryptMessages(signatures, outputFolder, passwordFile){
         const fullMessageU8 = await utils.toUtf8Bytes(fullMessageJson);
         const pubkey = new Uint8Array();
         const path = '';
+
+        console.log(signature.validator_index + ' ==> ' + fullMessageJson);
 
         const fileName = `${signature.validator_index}_${signature.validator_key}_exit.json`;
 

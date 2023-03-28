@@ -2,6 +2,7 @@ const inquirer = require('inquirer');
 const { percentageValidation, passwordFileValidation, outputFolderValidation, chainIdValidation, operatorIdValidation, urlValidation, booleanValidation } = require('./functions/validations');
 const { fetchValidatorsData } = require('./functions/fetchValidatorsData');
 const { createWithdrawalMessage } = require('./functions/createWithdrawalMessage');
+const { encryptMessages } = require('./functions/encryptMessages');
 
 // Load environment variables from the .env file
 require('dotenv').config();
@@ -167,7 +168,7 @@ async function main() {
 
     console.log('Step 3: Creating the withdrawal messages and signing them with the remote signer...');
 
-    await createWithdrawalMessage(
+    const signatures = await createWithdrawalMessage(
         kapiJsonResponse.data, // Validators data (public keys)
         kapiJsonResponse.meta.clBlockSnapshot.epoch, // Epoch from Kapi
         params.remoteSignerUrl, // Remote signer URL
@@ -178,12 +179,14 @@ async function main() {
     console.log('\n');
     console.log('Step 4: Encrypt the signed messages with the password file and save them to the output folder...');
 
-     //await encryptMessages(
-     //   params.outputFolder, // Output folder
-     //   params.passwordFile, // File with the password
-    // );
+    await encryptMessages(
+        signatures, // Signed messages
+        params.outputFolder, // Output folder
+        params.passwordFile, // File with the password
+    );
 
-    //console.log(jsonData);
+    console.log('\n');
+
 }
 
 main();

@@ -19,25 +19,8 @@ function urlValidation(input) {
     return isValidUrl(input) ? true : 'Invalid URL. Please enter a valid URL.';
 }
 
-function passwordFileValidation(input) {
-    try {
-        const fileContent = fs.readFileSync(input, 'utf-8');
-        return fileContent.trim() !== '' ? true : 'Empty file. The .password file cannot be empty.';
-    } catch (error) {
-        return 'File not found. Please enter a valid .password file path.';
-    }
-}
-
 function outputFolderValidation(input) {
     return fs.existsSync(input) ? true : 'Output folder not found. Please enter a valid folder path.';
-}
-
-function chainIdValidation(value) {
-    const intValue = parseInt(value, 10);
-    if (isNaN(intValue) || intValue <= 0) {
-        return 'Please enter a valid integer for the chain ID.';
-    }
-    return true;
 }
 
 function operatorIdValidation(value) {
@@ -48,17 +31,20 @@ function operatorIdValidation(value) {
     return true;
 }
 
-function booleanValidation(value) {
-    return value === 'true' || value === 'false' ? true : 'Please enter a valid boolean value (true or false).';
+function passwordValidation(value) {
+    return value.trim() !== '' ? true : 'The password cannot be empty.';
+}
+
+function moduleIdValidation(value) {
+    return value != '' ? true : 'The module ID cannot be empty.';
 }
 
 // Exportamos las funciones
 module.exports = {
     percentageValidation,
-    passwordFileValidation,
+    passwordValidation,
     outputFolderValidation,
-    chainIdValidation,
     operatorIdValidation,
     urlValidation,
-    booleanValidation
+    moduleIdValidation
 };

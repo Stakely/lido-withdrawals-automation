@@ -3,10 +3,7 @@ const utils = require('ethers');
 const fs = require('fs');
 const inquirer = require('inquirer');
 
-async function encryptMessages(signatures, outputFolder, passwordFile){
-
-    // Get content of the password file
-    const password = fs.readFileSync(passwordFile, 'utf-8').trim();
+async function encryptMessages(signatures, outputFolder, password){
 
     // For each signature, encrypt the message
     let encryptedSignatures=0;
@@ -31,7 +28,7 @@ async function encryptMessages(signatures, outputFolder, passwordFile){
         const pubkey = new Uint8Array();
         const path = '';
 
-        console.log(signature.validator_index + ' ==> ' + fullMessageJson);
+        //console.log(signature.validator_index + ' ==> ' + fullMessageJson);
 
         const fileName = `${signature.validator_index}_${signature.validator_key}_exit.json`;
 

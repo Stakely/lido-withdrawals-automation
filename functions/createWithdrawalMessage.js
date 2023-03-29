@@ -1,5 +1,4 @@
 const axios = require('axios');
-const https = require('https');
 
 async function createWithdrawalMessage(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, skipRemoteSignerSslVerification) {
     

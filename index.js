@@ -1,5 +1,5 @@
 const inquirer = require('inquirer');
-const { percentageValidation, passwordFileValidation, outputFolderValidation, chainIdValidation, operatorIdValidation, urlValidation, booleanValidation } = require('./functions/validations');
+const { percentageValidation, passwordValidation, outputFolderValidation, operatorIdValidation, urlValidation, moduleIdValidation } = require('./functions/validations');
 const { fetchValidatorsData } = require('./functions/fetchValidatorsData');
 const { createWithdrawalMessage } = require('./functions/createWithdrawalMessage');
 const { encryptMessages } = require('./functions/encryptMessages');
@@ -14,24 +14,16 @@ async function main() {
     console.log('\n');
     console.info('Step 1: Checking environment variables and asking for missing values...');
 
-    // Chains mapping
-    const chains = {
-        1: {name: 'Ethereum Mainnet', module_id: '1'},
-        5: {name: 'Goerli Testnet', module_id: '1'},
-        1337803: {name: 'Zhejiang Testnet', module_id: '1'}
-    };
-
     // Get values from environment variables or undefined if not present
     const env = {
         percentage: process.env.PERCENTAGE,
         kapiUrl: process.env.KAPI_URL,
         remoteSignerUrl: process.env.REMOTE_SIGNER_URL,
-        passwordFile: process.env.PASSWORD_FILE,
+        password: process.env.PASSWORD,
         outputFolder: process.env.OUTPUT_FOLDER,
-        chainId: process.env.CHAIN_ID,
         operatorId: process.env.OPERATOR_ID,
         beaconNodeUrl: process.env.BEACON_NODE_URL,
-		skipRemoteSignerSslVerification: process.env.SKIP_REMOTE_SIGNER_SSL_VERIFICATION,
+        moduleId: process.env.MODULE_ID,
     };
 
     // Validate environment variables
@@ -40,12 +32,11 @@ async function main() {
             percentage: percentageValidation,
             kapiUrl: urlValidation,
             remoteSignerUrl: urlValidation,
-            passwordFile: passwordFileValidation,
+            password: passwordValidation,
             outputFolder: outputFolderValidation,
-            chainId: chainIdValidation,
             operatorId: operatorIdValidation,
             beaconNodeUrl: urlValidation,
-			skipRemoteSignerSslVerification: booleanValidation,
+            moduleId: moduleIdValidation,
         }[key];
 
         const validationResult = validationFunction(value);
@@ -85,12 +76,12 @@ async function main() {
         });
     }
 
-    if (!env.passwordFile) {
+    if (!env.password) {
         questions.push({
             type: 'input',
-            name: 'passwordFile',
-            message: 'Please enter the path to the .password file:',
-            validate: passwordFileValidation,
+            name: 'password',
+            message: 'Please enter a password to encrypt the withdrawal messages:',
+            validate: password,
         });
     }
 
@@ -100,15 +91,6 @@ async function main() {
             name: 'outputFolder',
             message: 'Please enter the path to the output folder:',
             validate: outputFolderValidation,
-        });
-    }
-
-    if (!env.chainId) {
-        questions.push({
-            type: 'input',
-            name: 'chainId',
-            message: 'Please enter the chain ID:',
-            validate: chainIdValidation,
         });
     }
 
@@ -130,15 +112,14 @@ async function main() {
         });
     }
 
-	if (!env.skipRemoteSignerSslVerification) {
-		questions.push({
-			type: 'confirm',
-			name: 'skipRemoteSignerSslVerification',
-			message: 'Do you want to skip the SSL verification for the remote signer?',
-			validate: booleanValidation,
-			default: false,
-		});
-	}
+    if (!env.moduleId) {
+        questions.push({
+            type: 'input',
+            name: 'moduleId',
+            message: 'Please enter the module ID:',
+            validate: moduleIdValidation,
+        });
+    }
 
     const answers = await inquirer.prompt(questions);
 
@@ -147,13 +128,14 @@ async function main() {
         percentage: env.percentage || answers.percentage,
         kapiUrl: env.kapiUrl || answers.kapiUrl,
         remoteSignerUrl: env.remoteSignerUrl || answers.remoteSignerUrl,
-        passwordFile: env.passwordFile || answers.passwordFile,
-        outputFolder: env.outputFolder || answers.outputFolder,
-        chainId: env.chainId || answers.chainId,
+        password: env.password || answers.password,
         operatorId: env.operatorId || answers.operatorId,
+        outputFolder: env.outputFolder || answers.outputFolder,
         beaconNodeUrl: env.beaconNodeUrl || answers.beaconNodeUrl,
-		skipRemoteSignerSslVerification: env.skipRemoteSignerSslVerification || answers.skipRemoteSignerSslVerification,
+        moduleId: env.moduleId || answers.moduleId,
     };
+
+    console.log(params.operatorId);
 
     // Get validators data from Kapi
 
@@ -161,7 +143,7 @@ async function main() {
 
     const kapiJsonResponse = await fetchValidatorsData(
         params.kapiUrl, // Kapi URL
-        chains[params.chainId].module_id, // Module ID
+        params.moduleId, // Module ID
         params.operatorId, // Operator ID
         params.percentage // Percentage of validators
     );
@@ -182,7 +164,7 @@ async function main() {
     await encryptMessages(
         signatures, // Signed messages
         params.outputFolder, // Output folder
-        params.passwordFile, // File with the password
+        params.password, // File with the password
     );
 
     console.log('\n');

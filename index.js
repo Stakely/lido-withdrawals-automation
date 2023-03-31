@@ -1,8 +1,8 @@
 const inquirer = require('inquirer');
-const { percentageValidation, passwordValidation, outputFolderValidation, operatorIdValidation, urlValidation, moduleIdValidation } = require('./functions/validations');
-const { fetchValidatorsData } = require('./functions/fetchValidatorsData');
-const { createWithdrawalMessage } = require('./functions/createWithdrawalMessage');
-const { encryptMessages } = require('./functions/encryptMessages');
+const { percentageValidation, passwordValidation, outputFolderValidation, operatorIdValidation, urlValidation, moduleIdValidation } = require('./src/utils/validations');
+const { fetchValidatorsData } = require('./src/withdrawal/fetchValidatorsData');
+const { signWithdrawalMessages } = require('./src/withdrawal/signWithdrawalMessages');
+const { encryptMessages } = require('./src/withdrawal/encryptMessages');
 
 // Load environment variables from the .env file
 require('dotenv').config();
@@ -135,10 +135,7 @@ async function main() {
         moduleId: env.moduleId || answers.moduleId,
     };
 
-    console.log(params.operatorId);
-
     // Get validators data from Kapi
-
     console.log('Step 2: Fetching validators data from Kapi...');
 
     const kapiJsonResponse = await fetchValidatorsData(
@@ -150,12 +147,11 @@ async function main() {
 
     console.log('Step 3: Creating the withdrawal messages and signing them with the remote signer...');
 
-    const signatures = await createWithdrawalMessage(
+    const signatures = await signWithdrawalMessages(
         kapiJsonResponse.data, // Validators data (public keys)
         kapiJsonResponse.meta.clBlockSnapshot.epoch, // Epoch from Kapi
         params.remoteSignerUrl, // Remote signer URL
         params.beaconNodeUrl, // Beacon node URL
-		params.skipRemoteSignerSslVerification, // Skip remote signer SSL verification
     );
 
     console.log('\n');

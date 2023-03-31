@@ -24,6 +24,12 @@ function outputFolderValidation(input) {
 }
 
 function operatorIdValidation(value) {
+    
+    // Don't allow decimal numbers
+    if (value.includes('.')) {
+        return 'Please enter a valid integer greater than 0 for the operator ID.';
+    }
+    
     const intValue = parseInt(value, 10);
     if (isNaN(intValue) || intValue <= 0) {
         return 'Please enter a valid integer greater than 0 for the operator ID.';

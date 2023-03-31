@@ -4,8 +4,9 @@
   "description": "Lido Withdrawals Automation is a command-line tool that assists with the LIDO validators withdrawal process. The tool streamlines the procedure by fetching validators data, generating withdrawal messages, signing them with a remote signer, encrypting the signed messages, and saving them to the output folder.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js"
+    "test": "jest",
+    "start": "node index.js",
+    "coverage": "jest --coverage"
   },
   "author": "Stakely.io",
   "license": "MIT",
@@ -16,5 +17,9 @@
     "ethers": "^6.2.3",
     "inquirer": "^7.3.3",
     "minimist": "^1.2.8"
+  },
+  "devDependencies": {
+    "axios-mock-adapter": "^1.21.3",
+    "jest": "^29.5.0"
   }
 }

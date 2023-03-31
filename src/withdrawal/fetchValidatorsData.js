@@ -50,8 +50,8 @@ async function validateKapiJsonResponse(kapiJsonResponse) {
 
 // This function builds the complete KAPI url
 async function buildKapiUrl(kapiUrl, moduleId, operatorId, percentage) {
-	// Note: in the official KAPI, the method "exists_presign" is not available, so we use "validator-exits-to-prepare" method instead for local testing
-	return `${kapiUrl}/v1/modules/${moduleId}/validators/exists_presign/${operatorId}?percent=${percentage}`;
+	// Note: in the official KAPI, the method "exits_presign" is not available, so we use "validator-exits-to-prepare" method instead for local testing
+	return `${kapiUrl}/v1/modules/${moduleId}/validators/exits_presign/${operatorId}?percent=${percentage}`;
 }
 
 // This function fetches validators data from the KAPI

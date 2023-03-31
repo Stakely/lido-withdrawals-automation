@@ -10,7 +10,7 @@ describe('buildKapiUrl', () => {
         const operatorId = '999999';
         const percentage = 55;
         
-        const expectedUrl = 'http://localhost:3000/v1/modules/1/validators/exists_presign/999999?percent=55';
+        const expectedUrl = 'http://localhost:3000/v1/modules/1/validators/exits_presign/999999?percent=55';
         
         const result = await buildKapiUrl(kapiUrl, moduleId, operatorId, percentage);
         

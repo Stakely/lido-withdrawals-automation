@@ -42,7 +42,7 @@ npm install
 
 ## Configuration
 
-Create a \`.env\` file in the project root folder and set the following environment variables:
+Create a `.env` file in the project root folder and set the following environment variables:
 
 ```
 PERCENTAGE=<percentage_of_validators_to_withdraw>

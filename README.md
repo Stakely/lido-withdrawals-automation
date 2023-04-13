@@ -6,6 +6,9 @@
 # Lido Withdrawals Automation by Stakely.io
 
 Lido Withdrawals Automation is a command-line tool that assists with the LIDO validators withdrawal process. The tool streamlines the procedure by fetching validators data, generating withdrawal messages, signing them with a remote signer, encrypting the signed messages, and saving them to the output folder.
+
+![lido_withdrawals_automation](https://user-images.githubusercontent.com/8404210/231833396-3897fa1a-1669-4652-8469-c4bf0b5a811a.png)
+
 ## Features
 
 - Fetches validator data from the Kapi endpoint

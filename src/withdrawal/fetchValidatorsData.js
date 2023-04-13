@@ -1,17 +1,16 @@
-const axiosInstance = require('../utils/axiosInstance.js');
+const axiosInstance = require("../utils/axiosInstance.js");
 
 // This function fetches data from the KAPI
 async function fetchDataFromKAPI(url) {
 	try {
 		const response = await axiosInstance.get(url, {
 			headers: {
-				'Content-Type': 'application/json',
-				Accept: 'application/json',
+				"Accept": "application/json",
 			},
 		});
 		return response.data;
 	} catch (error) {
-		throw new Error('Failed to fetch data from the KAPI (Url: ' + url + '). ' + error.message);
+		throw new Error("Failed to fetch data from the KAPI (Url: " + url + "). " + error.message);
 	}
 }
 
@@ -20,31 +19,31 @@ async function fetchDataFromKAPI(url) {
 async function validateKapiJsonResponse(kapiJsonResponse) {
 	// Validate that data is an array
 	if (!Array.isArray(kapiJsonResponse.data)) {
-		throw new Error('Data field is not an array');
+		throw new Error("Data field is not an array");
 	}
 	
 	// Validate data length
 	if (kapiJsonResponse.data.length === 0) {
-		throw new Error('Data (validators) length from KAPI is 0');
+		throw new Error("Data (validators) length from KAPI is 0");
 	}
 	
 	// Validate data fields
 	for (const validator of kapiJsonResponse.data) {
 		if (!validator.validatorIndex || !validator.key) {
-			throw new Error('Data item is missing "validatorIndex" or "key" field');
+			throw new Error("Data item is missing \"validatorIndex\" or \"key\" field");
 		}
 	}
 	
 	// Validate that meta and clBlockSnapshot exist
 	if (!kapiJsonResponse.meta || !kapiJsonResponse.meta.clBlockSnapshot) {
-		throw new Error('Meta or clBlockSnapshot field is missing');
+		throw new Error("Meta or clBlockSnapshot field is missing");
 	}
 	
 	// Validate epoch field
 	const epoch = kapiJsonResponse.meta.clBlockSnapshot.epoch;
 	
-	if (typeof epoch !== 'number' || !Number.isInteger(epoch)) {
-		throw new Error('Epoch field is missing or not an integer');
+	if (typeof epoch !== "number" || !Number.isInteger(epoch)) {
+		throw new Error("Epoch field is missing or not an integer");
 	}
 }
 

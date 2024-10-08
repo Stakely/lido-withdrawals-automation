@@ -12,7 +12,7 @@
   "license": "MIT",
   "dependencies": {
     "@chainsafe/bls-keystore": "^3.0.0",
-    "axios": "^1.6.0",
+    "axios": "^1.7.7",
     "dotenv": "^16.0.3",
     "ethers": "^6.2.3",
     "inquirer": "^7.3.3",

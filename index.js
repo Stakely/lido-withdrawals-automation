@@ -40,9 +40,12 @@ async function main() {
 		}[key];
 
 		const validationResult = validationFunction(value);
-		if (value && validationResult !== true) {
-			console.error(`Error in environment variable ${key}: ${validationResult}`);
-			return;
+		if (validationResult !== true) {
+			console.error(
+				"lido-withdrawals-automation failed.",
+				`Error in environment variable ${key}: ${validationResult}`
+			);
+			process.exit(1);
 		}
 	}
 
@@ -164,6 +167,7 @@ async function main() {
 	);
 
 	console.log("\n");
+	console.log(`lido-withdrawals-automation completed successfully.`);
 
 }
 
@@ -171,6 +175,6 @@ main();
 
 // Cath all unhanded exceptions
 process.on("unhandledRejection", (error) => {
-	console.error(error.message);
+	console.error("lido-withdrawals-automation failed. Error:", error.message);
 	process.exit(1);
 });

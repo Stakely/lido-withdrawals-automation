@@ -28,6 +28,12 @@ async function main() {
 
 	// Validate environment variables
 	for (const [key, value] of Object.entries(env)) {
+
+		// If the value is undefined, skip the validation, it will be asked later
+		if(value === undefined) {
+			continue;
+		}
+
 		const validationFunction = {
 			percentage: percentageValidation,
 			kapiUrl: urlValidation,

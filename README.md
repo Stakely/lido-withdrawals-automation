@@ -97,7 +97,7 @@ This project is released under the [MIT License](https://opensource.org/licenses
 
 MIT License
 
-Copyright (c) 2023 Stakely
+Copyright (c) 2025 Stakely
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

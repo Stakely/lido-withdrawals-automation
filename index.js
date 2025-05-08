@@ -10,7 +10,7 @@ require("dotenv").config();
 async function main() {
 
 	console.log("\n");
-	console.info("🚀 Lido Withdrawals Automation developed by Stakely.io - v1.0.3");
+	console.info("🚀 Lido Withdrawals Automation developed by Stakely.io - v1.0.5");
 	console.log("\n");
 	console.info("Step 1: Checking environment variables and asking for missing values...");
 
@@ -28,6 +28,12 @@ async function main() {
 
 	// Validate environment variables
 	for (const [key, value] of Object.entries(env)) {
+
+		// If the value is undefined, skip the validation, it will be asked later
+		if(value === undefined) {
+			continue;
+		}
+
 		const validationFunction = {
 			percentage: percentageValidation,
 			kapiUrl: urlValidation,

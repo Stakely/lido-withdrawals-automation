@@ -68,6 +68,11 @@ describe("passwordValidation", () => {
 	test("should return error message for empty passwords", () => {
 		expect(passwordValidation("")).toBe("The password cannot be empty.");
 	});
+
+	test("should return error message for null passwords", () => {
+		expect(passwordValidation(null)).toBe("The password cannot be empty.");
+	});
+
 });
 
 

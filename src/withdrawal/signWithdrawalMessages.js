@@ -104,7 +104,7 @@ async function requestValidatorSignature(remoteSignerUrl, body) {
 	return response;
 }
 
-async function signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint) {
+async function signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, missingKeysTolerance) {
 	
 	const stateRoot = await getStateRoot(beaconNodeEndpoint);
 	console.log("State root: " + stateRoot);
@@ -119,6 +119,7 @@ async function signWithdrawalMessages(validators, epoch, remoteSignerUrl, beacon
 	
 	let i = 0;
 	let okSignatures = 0;
+	let skippedSignatures = 0;
 	const signatures = [];
 	
 	for (const validator of validators) {
@@ -133,6 +134,7 @@ async function signWithdrawalMessages(validators, epoch, remoteSignerUrl, beacon
 			
 			if (remoteSignerResponse.status === 404) {
 				console.log("Key not found in remote signer. " +  "(Validator #" + validator.validatorIndex + ")" + " Skipping...");
+				skippedSignatures++;
 				continue;
 			}
 			
@@ -161,11 +163,16 @@ async function signWithdrawalMessages(validators, epoch, remoteSignerUrl, beacon
 			);
 		}
 	}
+
+	if(skippedSignatures > missingKeysTolerance){
+		throw new Error("Missing keys tolerance reached. " + "Skipped signatures: " + skippedSignatures + "/" + validators.length + " (Tolerance: " + missingKeysTolerance + ")");
+	}
 		
 	console.log("\n");
 	console.log("================= [SIGNATURES REPORT] =================");
 	console.log("Requested signatures: " + i + "/" + validators.length);
 	console.log("Successful signatures: " + okSignatures + "/" + validators.length);
+	console.log("Skipped signatures: " + skippedSignatures + "/" + validators.length);
 	console.log("Failed signatures: " + (i - okSignatures));
 		
 	return signatures;

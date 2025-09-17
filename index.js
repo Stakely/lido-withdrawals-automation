@@ -1,4 +1,4 @@
-const inquirer = require("inquirer");
+const inquirer = require("inquirer").default;
 const { percentageValidation, passwordValidation, outputFolderValidation, operatorIdValidation, urlValidation, moduleIdValidation } = require("./src/utils/validations");
 const { fetchValidatorsData } = require("./src/withdrawal/fetchValidatorsData");
 const { signWithdrawalMessages } = require("./src/withdrawal/signWithdrawalMessages");
@@ -24,6 +24,7 @@ async function main() {
 		operatorId: process.env.OPERATOR_ID,
 		beaconNodeUrl: process.env.BEACON_NODE_URL,
 		moduleId: process.env.MODULE_ID,
+		missingKeysTolerance: process.env.MISSING_KEYS_TOLERANCE,
 	};
 
 	// Validate environment variables
@@ -132,7 +133,7 @@ async function main() {
 
 	const answers = await inquirer.prompt(questions);
 
-	// Combine environment variables and answers
+	// Combine environment variables and answers or default values.
 	const params = {
 		percentage: env.percentage || answers.percentage,
 		kapiUrl: env.kapiUrl || answers.kapiUrl,
@@ -142,6 +143,7 @@ async function main() {
 		outputFolder: env.outputFolder || answers.outputFolder,
 		beaconNodeUrl: env.beaconNodeUrl || answers.beaconNodeUrl,
 		moduleId: env.moduleId || answers.moduleId,
+		missingKeysTolerance: env.missingKeysTolerance || 0,
 	};
 
 	// Get validators data from Kapi
@@ -161,6 +163,7 @@ async function main() {
 		kapiJsonResponse.meta.clBlockSnapshot.epoch, // Epoch from Kapi
 		params.remoteSignerUrl, // Remote signer URL
 		params.beaconNodeUrl, // Beacon node URL
+		params.missingKeysTolerance // Missing keys tolerance
 	);
 
 	console.log("\n");

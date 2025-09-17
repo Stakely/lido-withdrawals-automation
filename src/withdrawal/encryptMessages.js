@@ -1,7 +1,7 @@
 const { create } = require("@chainsafe/bls-keystore");
 const utils = require("ethers");
 const fs = require("fs");
-const inquirer = require("inquirer");
+const inquirer = require("inquirer").default;
 
 function buildFullMessage(signature) {
 	return {

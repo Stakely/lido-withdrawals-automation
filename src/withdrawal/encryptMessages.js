@@ -1,7 +1,7 @@
 const { create } = require("@chainsafe/bls-keystore");
 const utils = require("ethers");
 const fs = require("fs");
-const inquirer = require("inquirer");
+const inquirer = require("inquirer").default;
 
 function buildFullMessage(signature) {
 	return {
@@ -46,9 +46,17 @@ async function overwritePrompt(fileName) {
 }
 
 async function encryptMessages(signatures, outputFolder, password) {
+	console.log("\n");
+	console.log("================= [ ENCRYPTING MESSAGES ] =================");
+	
+	let i = 0;
 	let encryptedSignatures = 0;
 	let skippedSignatures = 0;
+	
 	for (const signature of signatures) {
+		i++;
+		console.log("Encrypting message " + i + "/" + signatures.length + " (Validator #" + signature.validator_index + ")");
+		
 		const fullMessage = buildFullMessage(signature);
 		const fullMessageJson = JSON.stringify(fullMessage);
 		const fileName = `${signature.validator_index}_${signature.validator_key}_exit.json`;
@@ -56,6 +64,7 @@ async function encryptMessages(signatures, outputFolder, password) {
 		if (fs.existsSync(`${outputFolder}/${fileName}`)) {
 			const overwrite = await overwritePrompt(fileName);
 			if (!overwrite) {
+				console.log("Encryption skipped by user. (Validator #" + signature.validator_index + ")");
 				skippedSignatures++;
 				continue;
 			}
@@ -65,7 +74,10 @@ async function encryptMessages(signatures, outputFolder, password) {
 		const successfulWrite = await saveEncryptedMessageToFile(outputFolder, fileName, store);
     
 		if (successfulWrite) {
+			console.log("Message of validator #" + signature.validator_index + " encrypted successfully.");
 			encryptedSignatures++;
+		} else {
+			console.log("Failed to encrypt message for validator #" + signature.validator_index + ".");
 		}
 	}
   

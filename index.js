@@ -1,5 +1,5 @@
-const inquirer = require("inquirer");
-const { percentageValidation, passwordValidation, outputFolderValidation, operatorIdValidation, urlValidation, moduleIdValidation } = require("./src/utils/validations");
+const inquirer = require("inquirer").default;
+const { percentageValidation, passwordValidation, outputFolderValidation, operatorIdValidation, urlValidation, moduleIdValidation, missingKeysToleranceValidation } = require("./src/utils/validations");
 const { fetchValidatorsData } = require("./src/withdrawal/fetchValidatorsData");
 const { signWithdrawalMessages } = require("./src/withdrawal/signWithdrawalMessages");
 const { encryptMessages } = require("./src/withdrawal/encryptMessages");
@@ -10,7 +10,7 @@ require("dotenv").config();
 async function main() {
 
 	console.log("\n");
-	console.info("🚀 Lido Withdrawals Automation developed by Stakely.io - v1.0.5");
+	console.info("🚀 Lido Withdrawals Automation developed by Stakely.io - v1.1.0");
 	console.log("\n");
 	console.info("Step 1: Checking environment variables and asking for missing values...");
 
@@ -24,6 +24,7 @@ async function main() {
 		operatorId: process.env.OPERATOR_ID,
 		beaconNodeUrl: process.env.BEACON_NODE_URL,
 		moduleId: process.env.MODULE_ID,
+		missingKeysTolerance: process.env.MISSING_KEYS_TOLERANCE,
 	};
 
 	// Validate environment variables
@@ -43,6 +44,7 @@ async function main() {
 			operatorId: operatorIdValidation,
 			beaconNodeUrl: urlValidation,
 			moduleId: moduleIdValidation,
+			missingKeysTolerance: missingKeysToleranceValidation,
 		}[key];
 
 		const validationResult = validationFunction(value);
@@ -132,7 +134,7 @@ async function main() {
 
 	const answers = await inquirer.prompt(questions);
 
-	// Combine environment variables and answers
+	// Combine environment variables and answers or default values.
 	const params = {
 		percentage: env.percentage || answers.percentage,
 		kapiUrl: env.kapiUrl || answers.kapiUrl,
@@ -142,6 +144,7 @@ async function main() {
 		outputFolder: env.outputFolder || answers.outputFolder,
 		beaconNodeUrl: env.beaconNodeUrl || answers.beaconNodeUrl,
 		moduleId: env.moduleId || answers.moduleId,
+		missingKeysTolerance: env.missingKeysTolerance || 0,
 	};
 
 	// Get validators data from Kapi
@@ -161,6 +164,7 @@ async function main() {
 		kapiJsonResponse.meta.clBlockSnapshot.epoch, // Epoch from Kapi
 		params.remoteSignerUrl, // Remote signer URL
 		params.beaconNodeUrl, // Beacon node URL
+		params.missingKeysTolerance // Missing keys tolerance
 	);
 
 	console.log("\n");
@@ -173,7 +177,7 @@ async function main() {
 	);
 
 	console.log("\n");
-	console.log(`lido-withdrawals-automation completed successfully.`);
+	console.log("lido-withdrawals-automation completed successfully.");
 
 }
 

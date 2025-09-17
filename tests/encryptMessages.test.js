@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 const { buildFullMessage, encryptJsonMessage, saveEncryptedMessageToFile, overwritePrompt } = require("../src/withdrawal/encryptMessages");
 const { decrypt } = require("@chainsafe/bls-keystore");
-const inquirer = require("inquirer");
+const inquirer = require("inquirer").default;
 const fs = require("fs");
 
 jest.mock("fs");
@@ -70,7 +70,7 @@ describe("overwritePrompt", () => {
 		const fileName = "test_file.json";
 		
 		// Mock inquirer.prompt to return a specified user response
-		jest.spyOn(inquirer, "prompt").mockResolvedValueOnce({ overwrite: true });
+		const mockPrompt = jest.spyOn(inquirer, "prompt").mockResolvedValueOnce({ overwrite: true });
 		
 		// Call overwritePrompt function
 		const overwrite = await overwritePrompt(fileName);
@@ -79,7 +79,7 @@ describe("overwritePrompt", () => {
 		expect(overwrite).toBe(true);
 		
 		// Check if inquirer.prompt was called with the correct arguments
-		expect(inquirer.prompt).toHaveBeenCalledWith([
+		expect(mockPrompt).toHaveBeenCalledWith([
 			{
 				type: "confirm",
 				name: "overwrite",
@@ -89,7 +89,7 @@ describe("overwritePrompt", () => {
 		]);
 		
 		// Restore the original inquirer.prompt function
-		inquirer.prompt.mockRestore();
+		mockPrompt.mockRestore();
 	});
 	
 });

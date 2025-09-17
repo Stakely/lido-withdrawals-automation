@@ -56,6 +56,7 @@ OUTPUT_FOLDER=<path_to_output_folder>
 OPERATOR_ID=<operator_id>
 BEACON_NODE_URL=<beacon_node_url>
 MODULE_ID=<module_id>
+MISSING_KEYS_TOLERANCE=<missing_keys_tolerance>
 ```
 
 Replace the placeholders with your actual values. For example:
@@ -69,6 +70,7 @@ OUTPUT_FOLDER=/path/to/your/output-folder
 OPERATOR_ID=123
 BEACON_NODE_URL=http://localhost:5052
 MODULE_ID=1
+MISSING_KEYS_TOLERANCE=0
 ```
 
 ## Usage

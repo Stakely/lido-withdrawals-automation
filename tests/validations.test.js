@@ -7,6 +7,7 @@ const {
 	operatorIdValidation,
 	passwordValidation,
 	moduleIdValidation,
+	missingKeysToleranceValidation,
 } = require("../src/utils/validations.js");
 
 jest.mock("fs");
@@ -83,5 +84,22 @@ describe("moduleIdValidation", () => {
     
 	test("should return error message for empty module IDs", () =>{
 		expect(moduleIdValidation("")).toBe("The module ID cannot be empty.");
+	});
+});
+
+describe("missingKeysToleranceValidation", () => {
+	test("should return true for valid missing keys tolerance values", () => {
+		expect(missingKeysToleranceValidation("0")).toBe(true);
+		expect(missingKeysToleranceValidation("1")).toBe(true);
+		expect(missingKeysToleranceValidation("100")).toBe(true);
+		expect(missingKeysToleranceValidation("999")).toBe(true);
+	});
+    
+	test("should return error message for invalid missing keys tolerance values", () => {
+		expect(missingKeysToleranceValidation("-1")).toBe("Please enter a valid integer greater than or equal to 0 for the missing keys tolerance.");
+		expect(missingKeysToleranceValidation("-10")).toBe("Please enter a valid integer greater than or equal to 0 for the missing keys tolerance.");
+		expect(missingKeysToleranceValidation("abc")).toBe("Please enter a valid integer greater than or equal to 0 for the missing keys tolerance.");
+		expect(missingKeysToleranceValidation("1.5")).toBe("Please enter a valid integer greater than or equal to 0 for the missing keys tolerance.");
+		expect(missingKeysToleranceValidation("10.0")).toBe("Please enter a valid integer greater than or equal to 0 for the missing keys tolerance.");
 	});
 });

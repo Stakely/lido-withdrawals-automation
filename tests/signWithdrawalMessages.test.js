@@ -448,3 +448,293 @@ describe("signWithdrawalMessages", () => {
 	});
     
 });
+
+describe("signWithdrawalMessages - Missing Keys Tolerance", () => {
+	
+	afterEach(() => {
+		mock.reset();
+	});
+
+	// Helper function to setup common mocks
+	const setupCommonMocks = (beaconNodeEndpoint, stateRoot, fork, genesis_validators_root) => {
+		const headerResponse = {
+			data: [
+				{
+					header: {
+						message: {
+							state_root: stateRoot,
+						},
+					},
+				},
+			],
+		};
+        
+		mock.onGet(`${beaconNodeEndpoint}/eth/v1/beacon/headers`).reply(200, headerResponse);
+		mock.onGet(`${beaconNodeEndpoint}/eth/v1/beacon/states/${stateRoot}/fork`).reply(200, { data: fork });
+		mock.onGet(`${beaconNodeEndpoint}/eth/v1/beacon/genesis`).reply(200, { data: { genesis_validators_root } });
+	};
+
+	test("Should succeed when skipped signatures equals tolerance (edge case)", async () => {
+		const validators = [
+			{ validatorIndex: 1, key: "key1" },
+			{ validatorIndex: 2, key: "key2" },
+			{ validatorIndex: 3, key: "key3" },
+		];
+        
+		const epoch = 1;
+		const remoteSignerUrl = "http://localhost:3001";
+		const beaconNodeEndpoint = "http://localhost:5052";
+		const missingKeysTolerance = 2; // Exactly 2 keys will be missing
+        
+		const stateRoot = "0x88f68b30714e78da09bae0065a11167dc4c8b3ef9203c30ae973fb1eb14a38b6";
+		const fork = { current_version: "0x03001020" };
+		const genesis_validators_root = "0x043db0d9a83813551ee2f33450d23797757d430911a9320530ad8a0eabc43efb";
+		const signature1 = "0x187654321fedcba12987654321fedcba12987654321fedcba12987654321fedcba12987654321fedcba1254354321fedcba154321fedcba54321fedcba154321fedcba154321fedcba1154321fedcba154321fedcba154321fedcba121fedcba";
+        
+		setupCommonMocks(beaconNodeEndpoint, stateRoot, fork, genesis_validators_root);
+        
+		// First validator succeeds, second and third return 404
+		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key1`).reply(200, { signature: signature1 });
+		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key2`).reply(404);
+		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key3`).reply(404);
+        
+		const result = await signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, missingKeysTolerance);
+        
+		expect(result).toEqual([
+			{
+				validator_index: 1,
+				validator_key: "key1",
+				signature: signature1,
+				fork_version: fork.current_version,
+				epoch: epoch,
+			},
+		]);
+	});
+
+	test("Should fail when skipped signatures exceed tolerance", async () => {
+		const validators = [
+			{ validatorIndex: 1, key: "key1" },
+			{ validatorIndex: 2, key: "key2" },
+			{ validatorIndex: 3, key: "key3" },
+		];
+        
+		const epoch = 1;
+		const remoteSignerUrl = "http://localhost:3001";
+		const beaconNodeEndpoint = "http://localhost:5052";
+		const missingKeysTolerance = 1; // Only 1 missing key allowed, but 2 will be missing
+        
+		const stateRoot = "0x88f68b30714e78da09bae0065a11167dc4c8b3ef9203c30ae973fb1eb14a38b6";
+		const fork = { current_version: "0x03001020" };
+		const genesis_validators_root = "0x043db0d9a83813551ee2f33450d23797757d430911a9320530ad8a0eabc43efb";
+		const signature1 = "0x187654321fedcba12987654321fedcba12987654321fedcba12987654321fedcba12987654321fedcba1254354321fedcba154321fedcba54321fedcba154321fedcba154321fedcba1154321fedcba154321fedcba154321fedcba121fedcba";
+        
+		setupCommonMocks(beaconNodeEndpoint, stateRoot, fork, genesis_validators_root);
+        
+		// First validator succeeds, second and third return 404
+		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key1`).reply(200, { signature: signature1 });
+		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key2`).reply(404);
+		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key3`).reply(404);
+        
+		await expect(signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, missingKeysTolerance))
+			.rejects.toThrow("Missing keys tolerance reached. Skipped signatures: 2/3 (Tolerance: 1)");
+	});
+
+	test("Should succeed with zero tolerance when no keys are missing", async () => {
+		const validators = [
+			{ validatorIndex: 1, key: "key1" },
+			{ validatorIndex: 2, key: "key2" },
+		];
+        
+		const epoch = 1;
+		const remoteSignerUrl = "http://localhost:3001";
+		const beaconNodeEndpoint = "http://localhost:5052";
+		const missingKeysTolerance = 0; // Zero tolerance
+        
+		const stateRoot = "0x88f68b30714e78da09bae0065a11167dc4c8b3ef9203c30ae973fb1eb14a38b6";
+		const fork = { current_version: "0x03001020" };
+		const genesis_validators_root = "0x043db0d9a83813551ee2f33450d23797757d430911a9320530ad8a0eabc43efb";
+		const signature1 = "0x187654321fedcba12987654321fedcba12987654321fedcba12987654321fedcba12987654321fedcba1254354321fedcba154321fedcba54321fedcba154321fedcba154321fedcba1154321fedcba154321fedcba154321fedcba121fedcba";
+		const signature2 = "0x287654321fedcba12987654321fedcba12987654321fedcba12987654321fedcba12987654321fedcba1254354321fedcba154321fedcba54321fedcba154321fedcba154321fedcba1154321fedcba154321fedcba154321fedcba121fedcba";
+        
+		setupCommonMocks(beaconNodeEndpoint, stateRoot, fork, genesis_validators_root);
+        
+		// Both validators succeed
+		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key1`).reply(200, { signature: signature1 });
+		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key2`).reply(200, { signature: signature2 });
+        
+		const result = await signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, missingKeysTolerance);
+        
+		expect(result).toEqual([
+			{
+				validator_index: 1,
+				validator_key: "key1",
+				signature: signature1,
+				fork_version: fork.current_version,
+				epoch: epoch,
+			},
+			{
+				validator_index: 2,
+				validator_key: "key2",
+				signature: signature2,
+				fork_version: fork.current_version,
+				epoch: epoch,
+			},
+		]);
+	});
+
+	test("Should fail with zero tolerance when any key is missing", async () => {
+		const validators = [
+			{ validatorIndex: 1, key: "key1" },
+			{ validatorIndex: 2, key: "key2" },
+		];
+        
+		const epoch = 1;
+		const remoteSignerUrl = "http://localhost:3001";
+		const beaconNodeEndpoint = "http://localhost:5052";
+		const missingKeysTolerance = 0; // Zero tolerance
+        
+		const stateRoot = "0x88f68b30714e78da09bae0065a11167dc4c8b3ef9203c30ae973fb1eb14a38b6";
+		const fork = { current_version: "0x03001020" };
+		const genesis_validators_root = "0x043db0d9a83813551ee2f33450d23797757d430911a9320530ad8a0eabc43efb";
+		const signature1 = "0x187654321fedcba12987654321fedcba12987654321fedcba12987654321fedcba12987654321fedcba1254354321fedcba154321fedcba54321fedcba154321fedcba154321fedcba1154321fedcba154321fedcba154321fedcba121fedcba";
+        
+		setupCommonMocks(beaconNodeEndpoint, stateRoot, fork, genesis_validators_root);
+        
+		// First validator succeeds, second returns 404
+		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key1`).reply(200, { signature: signature1 });
+		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key2`).reply(404);
+        
+		await expect(signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, missingKeysTolerance))
+			.rejects.toThrow("Missing keys tolerance reached. Skipped signatures: 1/2 (Tolerance: 0)");
+	});
+
+	test("Should succeed when tolerance equals total validators (all can be missing)", async () => {
+		const validators = [
+			{ validatorIndex: 1, key: "key1" },
+			{ validatorIndex: 2, key: "key2" },
+		];
+        
+		const epoch = 1;
+		const remoteSignerUrl = "http://localhost:3001";
+		const beaconNodeEndpoint = "http://localhost:5052";
+		const missingKeysTolerance = 2; // All validators can be missing
+        
+		const stateRoot = "0x88f68b30714e78da09bae0065a11167dc4c8b3ef9203c30ae973fb1eb14a38b6";
+		const fork = { current_version: "0x03001020" };
+		const genesis_validators_root = "0x043db0d9a83813551ee2f33450d23797757d430911a9320530ad8a0eabc43efb";
+        
+		setupCommonMocks(beaconNodeEndpoint, stateRoot, fork, genesis_validators_root);
+        
+		// Both validators return 404
+		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key1`).reply(404);
+		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key2`).reply(404);
+        
+		const result = await signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, missingKeysTolerance);
+        
+		expect(result).toEqual([]);
+	});
+
+	test("Should succeed when tolerance exceeds total validators", async () => {
+		const validators = [
+			{ validatorIndex: 1, key: "key1" },
+		];
+        
+		const epoch = 1;
+		const remoteSignerUrl = "http://localhost:3001";
+		const beaconNodeEndpoint = "http://localhost:5052";
+		const missingKeysTolerance = 5; // Tolerance higher than total validators
+        
+		const stateRoot = "0x88f68b30714e78da09bae0065a11167dc4c8b3ef9203c30ae973fb1eb14a38b6";
+		const fork = { current_version: "0x03001020" };
+		const genesis_validators_root = "0x043db0d9a83813551ee2f33450d23797757d430911a9320530ad8a0eabc43efb";
+        
+		setupCommonMocks(beaconNodeEndpoint, stateRoot, fork, genesis_validators_root);
+        
+		// Validator returns 404
+		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key1`).reply(404);
+        
+		const result = await signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, missingKeysTolerance);
+        
+		expect(result).toEqual([]);
+	});
+
+	test("Should handle mixed scenario with some successful, some missing keys", async () => {
+		const validators = [
+			{ validatorIndex: 1, key: "key1" },
+			{ validatorIndex: 2, key: "key2" },
+			{ validatorIndex: 3, key: "key3" },
+			{ validatorIndex: 4, key: "key4" },
+			{ validatorIndex: 5, key: "key5" },
+		];
+        
+		const epoch = 1;
+		const remoteSignerUrl = "http://localhost:3001";
+		const beaconNodeEndpoint = "http://localhost:5052";
+		const missingKeysTolerance = 3; // Allow up to 3 missing keys
+        
+		const stateRoot = "0x88f68b30714e78da09bae0065a11167dc4c8b3ef9203c30ae973fb1eb14a38b6";
+		const fork = { current_version: "0x03001020" };
+		const genesis_validators_root = "0x043db0d9a83813551ee2f33450d23797757d430911a9320530ad8a0eabc43efb";
+		const signature1 = "0x187654321fedcba12987654321fedcba12987654321fedcba12987654321fedcba12987654321fedcba1254354321fedcba154321fedcba54321fedcba154321fedcba154321fedcba1154321fedcba154321fedcba154321fedcba121fedcba";
+		const signature4 = "0x487654321fedcba12987654321fedcba12987654321fedcba12987654321fedcba12987654321fedcba1254354321fedcba154321fedcba54321fedcba154321fedcba154321fedcba1154321fedcba154321fedcba154321fedcba121fedcba";
+        
+		setupCommonMocks(beaconNodeEndpoint, stateRoot, fork, genesis_validators_root);
+        
+		// Mixed responses: success, 404, 404, success, 404
+		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key1`).reply(200, { signature: signature1 });
+		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key2`).reply(404);
+		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key3`).reply(404);
+		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key4`).reply(200, { signature: signature4 });
+		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key5`).reply(404);
+        
+		const result = await signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, missingKeysTolerance);
+        
+		expect(result).toEqual([
+			{
+				validator_index: 1,
+				validator_key: "key1",
+				signature: signature1,
+				fork_version: fork.current_version,
+				epoch: epoch,
+			},
+			{
+				validator_index: 4,
+				validator_key: "key4",
+				signature: signature4,
+				fork_version: fork.current_version,
+				epoch: epoch,
+			},
+		]);
+	});
+
+	test("Should fail in mixed scenario when tolerance is exceeded", async () => {
+		const validators = [
+			{ validatorIndex: 1, key: "key1" },
+			{ validatorIndex: 2, key: "key2" },
+			{ validatorIndex: 3, key: "key3" },
+			{ validatorIndex: 4, key: "key4" },
+		];
+        
+		const epoch = 1;
+		const remoteSignerUrl = "http://localhost:3001";
+		const beaconNodeEndpoint = "http://localhost:5052";
+		const missingKeysTolerance = 2; // Allow up to 2 missing keys, but 3 will be missing
+        
+		const stateRoot = "0x88f68b30714e78da09bae0065a11167dc4c8b3ef9203c30ae973fb1eb14a38b6";
+		const fork = { current_version: "0x03001020" };
+		const genesis_validators_root = "0x043db0d9a83813551ee2f33450d23797757d430911a9320530ad8a0eabc43efb";
+		const signature1 = "0x187654321fedcba12987654321fedcba12987654321fedcba12987654321fedcba12987654321fedcba1254354321fedcba154321fedcba54321fedcba154321fedcba154321fedcba1154321fedcba154321fedcba154321fedcba121fedcba";
+        
+		setupCommonMocks(beaconNodeEndpoint, stateRoot, fork, genesis_validators_root);
+        
+		// One success, three 404s
+		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key1`).reply(200, { signature: signature1 });
+		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key2`).reply(404);
+		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key3`).reply(404);
+		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key4`).reply(404);
+        
+		await expect(signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, missingKeysTolerance))
+			.rejects.toThrow("Missing keys tolerance reached. Skipped signatures: 3/4 (Tolerance: 2)");
+	});
+
+});

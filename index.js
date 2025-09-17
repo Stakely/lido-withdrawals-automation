@@ -176,7 +176,7 @@ async function main() {
 	);
 
 	console.log("\n");
-	console.log(`lido-withdrawals-automation completed successfully.`);
+	console.log("lido-withdrawals-automation completed successfully.");
 
 }
 

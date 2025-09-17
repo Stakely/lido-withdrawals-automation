@@ -165,7 +165,7 @@ async function signWithdrawalMessages(validators, epoch, remoteSignerUrl, beacon
 	}
 
 	if(skippedSignatures > missingKeysTolerance){
-		throw new Error("Missing keys tolerance reached. " + "Skipped signatures: " + skippedSignatures + "/" + validators.length + " (Tolerance: " + missingKeysTolerance + ")");
+		throw new Error("Missing keys tolerance reached. " + "Skipped signatures: " + skippedSignatures + "/" + validators.length + " (Tolerance: " + missingKeysTolerance + "). You can increase the tolerance by setting the MISSING_KEYS_TOLERANCE environment variable.");
 	}
 		
 	console.log("\n");

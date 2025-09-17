@@ -45,6 +45,19 @@ function moduleIdValidation(value) {
 	return value != "" ? true : "The module ID cannot be empty.";
 }
 
+function missingKeysToleranceValidation(value) {
+	// Don't allow decimal numbers
+	if (value.includes(".")) {
+		return "Please enter a valid integer greater than or equal to 0 for the missing keys tolerance.";
+	}
+    
+	const intValue = parseInt(value, 10);
+	if (isNaN(intValue) || intValue < 0) {
+		return "Please enter a valid integer greater than or equal to 0 for the missing keys tolerance.";
+	}
+	return true;
+}
+
 // Export all validation functions
 module.exports = {
 	percentageValidation,
@@ -52,5 +65,6 @@ module.exports = {
 	outputFolderValidation,
 	operatorIdValidation,
 	urlValidation,
-	moduleIdValidation
+	moduleIdValidation,
+	missingKeysToleranceValidation
 };

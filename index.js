@@ -1,5 +1,5 @@
 const inquirer = require("inquirer").default;
-const { percentageValidation, passwordValidation, outputFolderValidation, operatorIdValidation, urlValidation, moduleIdValidation } = require("./src/utils/validations");
+const { percentageValidation, passwordValidation, outputFolderValidation, operatorIdValidation, urlValidation, moduleIdValidation, missingKeysToleranceValidation } = require("./src/utils/validations");
 const { fetchValidatorsData } = require("./src/withdrawal/fetchValidatorsData");
 const { signWithdrawalMessages } = require("./src/withdrawal/signWithdrawalMessages");
 const { encryptMessages } = require("./src/withdrawal/encryptMessages");
@@ -44,6 +44,7 @@ async function main() {
 			operatorId: operatorIdValidation,
 			beaconNodeUrl: urlValidation,
 			moduleId: moduleIdValidation,
+			missingKeysTolerance: missingKeysToleranceValidation,
 		}[key];
 
 		const validationResult = validationFunction(value);

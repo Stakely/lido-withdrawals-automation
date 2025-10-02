@@ -10,7 +10,7 @@ require("dotenv").config();
 async function main() {
 
 	console.log("\n");
-	console.info("🚀 Lido Withdrawals Automation developed by Stakely.io - v1.1.0");
+	console.info("🚀 Lido Withdrawals Automation developed by Stakely.io - v1.2.0");
 	console.log("\n");
 	console.info("Step 1: Checking environment variables and asking for missing values...");
 

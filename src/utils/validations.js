@@ -58,6 +58,10 @@ function missingKeysToleranceValidation(value) {
 	return true;
 }
 
+function booleanValidation(value) {
+	return value === "true" || value === "false" ? true : "Please enter a valid boolean value (true or false).";
+}
+
 // Export all validation functions
 module.exports = {
 	percentageValidation,
@@ -66,5 +70,6 @@ module.exports = {
 	operatorIdValidation,
 	urlValidation,
 	moduleIdValidation,
-	missingKeysToleranceValidation
+	missingKeysToleranceValidation,
+	booleanValidation,
 };

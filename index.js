@@ -1,5 +1,5 @@
 const inquirer = require("inquirer").default;
-const { percentageValidation, passwordValidation, outputFolderValidation, operatorIdValidation, urlValidation, moduleIdValidation, missingKeysToleranceValidation } = require("./src/utils/validations");
+const { percentageValidation, passwordValidation, outputFolderValidation, operatorIdValidation, urlValidation, moduleIdValidation, missingKeysToleranceValidation, booleanValidation } = require("./src/utils/validations");
 const { fetchValidatorsData } = require("./src/withdrawal/fetchValidatorsData");
 const { signWithdrawalMessages } = require("./src/withdrawal/signWithdrawalMessages");
 const { encryptMessages } = require("./src/withdrawal/encryptMessages");
@@ -25,6 +25,7 @@ async function main() {
 		beaconNodeUrl: process.env.BEACON_NODE_URL,
 		moduleId: process.env.MODULE_ID,
 		missingKeysTolerance: process.env.MISSING_KEYS_TOLERANCE,
+		useCurrentForkVersion: process.env.USE_CURRENT_FORK_VERSION,
 	};
 
 	// Validate environment variables
@@ -45,6 +46,7 @@ async function main() {
 			beaconNodeUrl: urlValidation,
 			moduleId: moduleIdValidation,
 			missingKeysTolerance: missingKeysToleranceValidation,
+			useCurrentForkVersion: booleanValidation,
 		}[key];
 
 		const validationResult = validationFunction(value);
@@ -145,6 +147,7 @@ async function main() {
 		beaconNodeUrl: env.beaconNodeUrl || answers.beaconNodeUrl,
 		moduleId: env.moduleId || answers.moduleId,
 		missingKeysTolerance: env.missingKeysTolerance || 0,
+		useCurrentForkVersion: env.useCurrentForkVersion || false,
 	};
 
 	// Get validators data from Kapi
@@ -165,6 +168,7 @@ async function main() {
 		params.remoteSignerUrl, // Remote signer URL
 		params.beaconNodeUrl, // Beacon node URL
 		params.missingKeysTolerance // Missing keys tolerance
+
 	);
 
 	console.log("\n");

@@ -39,6 +39,33 @@ async function getForkInfo(beaconNodeEndpoint, stateRoot) {
 	}
 }
 
+async function getCapellaForkInfo(beaconNodeEndpoint) {
+	try {
+		const response = await axiosInstance.get(beaconNodeEndpoint + "/eth/v1/config/spec", {
+			headers: {
+				"Content-Type": "application/json"
+			},
+		});
+
+		const bellatrixForkVersion = response.data.data.BELLATRIX_FORK_VERSION;
+		const capellaForkVersion = response.data.data.CAPELLA_FORK_VERSION;
+		const capellaForkEpoch = response.data.data.CAPELLA_FORK_EPOCH;
+
+		if (!bellatrixForkVersion || !capellaForkVersion || !capellaForkEpoch) {
+			throw new Error("Fork versions are empty or undefined.");
+		}
+
+		return {
+			"previous_version": bellatrixForkVersion,
+			"current_version": capellaForkVersion,
+			"epoch": capellaForkEpoch,
+		};
+
+	} catch (error) {
+		throw new Error("Failed to fetch capella fork info from the Beacon Node. " + error.message);
+	}
+}
+
 async function getGenesisValidatorsRoot(beaconNodeEndpoint) {
 	try {
 		const response = await axiosInstance.get(beaconNodeEndpoint + "/eth/v1/beacon/genesis", {
@@ -104,14 +131,26 @@ async function requestValidatorSignature(remoteSignerUrl, body) {
 	return response;
 }
 
-async function signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, missingKeysTolerance) {
+async function signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, missingKeysTolerance, useCurrentForkVersion) {
 	
-	const stateRoot = await getStateRoot(beaconNodeEndpoint);
-	console.log("State root: " + stateRoot);
-	
-	const fork = await getForkInfo(beaconNodeEndpoint, stateRoot);
+	// If useCurrentForkVersion is true, we will use the current fork version,
+	// otherwise we will use CAPELLA_FORK_VERSION
+	let fork;
+	if(useCurrentForkVersion){
+		const stateRoot = await getStateRoot(beaconNodeEndpoint);
+		const forkInfo = await getForkInfo(beaconNodeEndpoint, stateRoot);
+		fork = forkInfo;
+	}else{
+		const capellaForkInfo = await getCapellaForkInfo(beaconNodeEndpoint);
+		fork = capellaForkInfo;
+	}
+
+	const forkVersion = fork.current_version;
+
+	console.log("Fork version: " + fork.current_version);
 	
 	const genesis_validators_root = await getGenesisValidatorsRoot(beaconNodeEndpoint);
+	
 	console.log("Genesis validator root: " + genesis_validators_root);
 	
 	console.log("\n");
@@ -151,7 +190,7 @@ async function signWithdrawalMessages(validators, epoch, remoteSignerUrl, beacon
 				validator_index: validator.validatorIndex,
 				validator_key: validator.key,
 				signature: signature,
-				fork_version: fork.current_version,
+				fork_version: forkVersion,
 				epoch: epoch,
 			});
 			
@@ -181,6 +220,7 @@ async function signWithdrawalMessages(validators, epoch, remoteSignerUrl, beacon
 module.exports = {
 	getStateRoot,
 	getForkInfo,
+	getCapellaForkInfo,
 	getGenesisValidatorsRoot,
 	buildRemoteSignerUrl,
 	createRemoteSignerRequestBody,

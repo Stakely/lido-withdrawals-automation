@@ -1,0 +1,16 @@
+overrides:
+  ws: "^8.20.1"
+minimumReleaseAge: 10080
+minimumReleaseAgeExclude:
+  - "@types/node"
+  - "undici-types"
+  - "resolve"
+  - "lru-cache"
+  - "@jridgewell/gen-mapping"
+  - "@jridgewell/sourcemap-codec"
+  - "baseline-browser-mapping"
+  - "caniuse-lite"
+  - "electron-to-chromium"
+  - "eslint"
+packageManagerStrict: true
+engineStrict: true

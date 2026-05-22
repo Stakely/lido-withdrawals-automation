@@ -1,6 +1,6 @@
 /* eslint-disable no-undef */
 const MockAdapter = require("axios-mock-adapter");
-const { getStateRoot, getForkInfo, getGenesisValidatorsRoot, buildRemoteSignerUrl, createRemoteSignerRequestBody, requestValidatorSignature, signWithdrawalMessages } = require("../src/withdrawal/signWithdrawalMessages.js");
+const { getStateRoot, getForkInfo, getCapellaForkInfo, getGenesisValidatorsRoot, buildRemoteSignerUrl, createRemoteSignerRequestBody, requestValidatorSignature, signWithdrawalMessages } = require("../src/withdrawal/signWithdrawalMessages.js");
 const axiosInstance = require("../src/utils/axiosInstance.js");
 
 const mock = new MockAdapter(axiosInstance);
@@ -119,6 +119,125 @@ describe("getForkInfo", () => {
 		await expect(async () => {
 			await getForkInfo(beaconNodeEndpoint, stateRoot);
 		}).rejects.toThrow("Failed to fetch fork info from the Beacon Node.");
+	});
+});
+
+describe("getCapellaForkInfo", () => {
+	afterEach(() => {
+		mock.reset();
+	});
+    
+	test("Should return capella fork info when the Beacon Node response is valid", async () => {
+		const beaconNodeEndpoint = "http://localhost:5052";
+        
+		const mockedResponse = {
+			data: {
+				CONFIG_NAME: "hoodi",
+				PRESET_BASE: "mainnet",
+				TERMINAL_TOTAL_DIFFICULTY: "0",
+				TERMINAL_BLOCK_HASH: "0x0000000000000000000000000000000000000000000000000000000000000000",
+				TERMINAL_BLOCK_HASH_ACTIVATION_EPOCH: "18446744073709551615",
+				MIN_GENESIS_ACTIVE_VALIDATOR_COUNT: "16384",
+				MIN_GENESIS_TIME: "1742212800",
+				GENESIS_FORK_VERSION: "0x10000910",
+				GENESIS_DELAY: "600",
+				ALTAIR_FORK_VERSION: "0x20000910",
+				ALTAIR_FORK_EPOCH: "0",
+				BELLATRIX_FORK_VERSION: "0x30000910",
+				BELLATRIX_FORK_EPOCH: "0",
+				CAPELLA_FORK_VERSION: "0x40000910",
+				CAPELLA_FORK_EPOCH: "0",
+				DENEB_FORK_VERSION: "0x50000910",
+				DENEB_FORK_EPOCH: "0",
+				ELECTRA_FORK_VERSION: "0x60000910",
+				ELECTRA_FORK_EPOCH: "2048",
+				FULU_FORK_VERSION: "0x70000910",
+				FULU_FORK_EPOCH: "50688"
+			}
+		};
+        
+		const configUrl = beaconNodeEndpoint + "/eth/v1/config/spec";
+        
+		mock.onGet(configUrl).reply(200, mockedResponse);
+        
+		const result = await getCapellaForkInfo(beaconNodeEndpoint);
+        
+		expect(result).toEqual({
+			previous_version: "0x30000910",
+			current_version: "0x40000910",
+			epoch: "0"
+		});
+	});
+    
+	test("Should throw an error when BELLATRIX_FORK_VERSION is missing", async () => {
+		const beaconNodeEndpoint = "http://localhost:5052";
+        
+		const mockedResponse = {
+			data: {
+				CAPELLA_FORK_VERSION: "0x40000910",
+				CAPELLA_FORK_EPOCH: "0"
+			}
+		};
+        
+		const configUrl = beaconNodeEndpoint + "/eth/v1/config/spec";
+        
+		mock.onGet(configUrl).reply(200, mockedResponse);
+        
+		await expect(async () => {
+			await getCapellaForkInfo(beaconNodeEndpoint);
+		}).rejects.toThrow("Fork versions are empty or undefined.");
+	});
+    
+	test("Should throw an error when CAPELLA_FORK_VERSION is missing", async () => {
+		const beaconNodeEndpoint = "http://localhost:5052";
+        
+		const mockedResponse = {
+			data: {
+				BELLATRIX_FORK_VERSION: "0x30000910",
+				CAPELLA_FORK_EPOCH: "0"
+			}
+		};
+        
+		const configUrl = beaconNodeEndpoint + "/eth/v1/config/spec";
+        
+		mock.onGet(configUrl).reply(200, mockedResponse);
+        
+		await expect(async () => {
+			await getCapellaForkInfo(beaconNodeEndpoint);
+		}).rejects.toThrow("Fork versions are empty or undefined.");
+	});
+    
+	test("Should throw an error when CAPELLA_FORK_EPOCH is missing", async () => {
+		const beaconNodeEndpoint = "http://localhost:5052";
+        
+		const mockedResponse = {
+			data: {
+				BELLATRIX_FORK_VERSION: "0x30000910",
+				CAPELLA_FORK_VERSION: "0x40000910"
+			}
+		};
+        
+		const configUrl = beaconNodeEndpoint + "/eth/v1/config/spec";
+        
+		mock.onGet(configUrl).reply(200, mockedResponse);
+        
+		await expect(async () => {
+			await getCapellaForkInfo(beaconNodeEndpoint);
+		}).rejects.toThrow("Fork versions are empty or undefined.");
+	});
+    
+	test("Should throw an error when the Beacon Node returns an error", async () => {
+		const beaconNodeEndpoint = "http://localhost:5052";
+        
+		const errorMessage = "Beacon Node error";
+        
+		const configUrl = beaconNodeEndpoint + "/eth/v1/config/spec";
+        
+		mock.onGet(configUrl).reply(500, errorMessage);
+        
+		await expect(async () => {
+			await getCapellaForkInfo(beaconNodeEndpoint);
+		}).rejects.toThrow("Failed to fetch capella fork info from the Beacon Node.");
 	});
 });
 
@@ -344,7 +463,7 @@ describe("signWithdrawalMessages", () => {
 		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key1`).reply(200, { signature: signature1 });
 		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key2`).reply(200, { signature: signature2 });
         
-		const result = await signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint);
+		const result = await signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, 0, true);
         
 		expect(result).toEqual([
 			{
@@ -399,7 +518,7 @@ describe("signWithdrawalMessages", () => {
 		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key1`).reply(200, { signature: signature1 });
 		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key2`).reply(404);
         
-		const result = await signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint);
+		const result = await signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, 1, true);
         
 		expect(result).toEqual([
 			{
@@ -444,7 +563,7 @@ describe("signWithdrawalMessages", () => {
         
 		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key1`).reply(200, { signature: invalidSignature });
         
-		await expect(signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint)).rejects.toThrowError("Remote signer is not returning a valid signature.");
+		await expect(signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, 0, true)).rejects.toThrowError("Remote signer is not returning a valid signature.");
 	});
     
 });
@@ -498,7 +617,7 @@ describe("signWithdrawalMessages - Missing Keys Tolerance", () => {
 		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key2`).reply(404);
 		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key3`).reply(404);
         
-		const result = await signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, missingKeysTolerance);
+		const result = await signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, missingKeysTolerance, true);
         
 		expect(result).toEqual([
 			{
@@ -535,7 +654,7 @@ describe("signWithdrawalMessages - Missing Keys Tolerance", () => {
 		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key2`).reply(404);
 		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key3`).reply(404);
         
-		await expect(signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, missingKeysTolerance))
+		await expect(signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, missingKeysTolerance, true))
 			.rejects.toThrow("Missing keys tolerance reached. Skipped signatures: 2/3 (Tolerance: 1)");
 	});
 
@@ -562,7 +681,7 @@ describe("signWithdrawalMessages - Missing Keys Tolerance", () => {
 		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key1`).reply(200, { signature: signature1 });
 		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key2`).reply(200, { signature: signature2 });
         
-		const result = await signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, missingKeysTolerance);
+		const result = await signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, missingKeysTolerance, true);
         
 		expect(result).toEqual([
 			{
@@ -604,7 +723,7 @@ describe("signWithdrawalMessages - Missing Keys Tolerance", () => {
 		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key1`).reply(200, { signature: signature1 });
 		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key2`).reply(404);
         
-		await expect(signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, missingKeysTolerance))
+		await expect(signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, missingKeysTolerance, true))
 			.rejects.toThrow("Missing keys tolerance reached. Skipped signatures: 1/2 (Tolerance: 0)");
 	});
 
@@ -629,7 +748,7 @@ describe("signWithdrawalMessages - Missing Keys Tolerance", () => {
 		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key1`).reply(404);
 		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key2`).reply(404);
         
-		const result = await signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, missingKeysTolerance);
+		const result = await signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, missingKeysTolerance, true);
         
 		expect(result).toEqual([]);
 	});
@@ -653,7 +772,7 @@ describe("signWithdrawalMessages - Missing Keys Tolerance", () => {
 		// Validator returns 404
 		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key1`).reply(404);
         
-		const result = await signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, missingKeysTolerance);
+		const result = await signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, missingKeysTolerance, true);
         
 		expect(result).toEqual([]);
 	});
@@ -687,7 +806,7 @@ describe("signWithdrawalMessages - Missing Keys Tolerance", () => {
 		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key4`).reply(200, { signature: signature4 });
 		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key5`).reply(404);
         
-		const result = await signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, missingKeysTolerance);
+		const result = await signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, missingKeysTolerance, true);
         
 		expect(result).toEqual([
 			{
@@ -733,8 +852,140 @@ describe("signWithdrawalMessages - Missing Keys Tolerance", () => {
 		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key3`).reply(404);
 		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key4`).reply(404);
         
-		await expect(signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, missingKeysTolerance))
+		await expect(signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, missingKeysTolerance, true))
 			.rejects.toThrow("Missing keys tolerance reached. Skipped signatures: 3/4 (Tolerance: 2)");
+	});
+
+	test("Should use getCapellaForkInfo when useCurrentForkVersion is false", async () => {
+        
+		const validators = [
+			{ validatorIndex: 1, key: "key1" },
+		];
+        
+		const epoch = 1;
+		const remoteSignerUrl = "http://localhost:3001";
+		const beaconNodeEndpoint = "http://localhost:5052";
+        
+		const genesis_validators_root = "0x043db0d9a83813551ee2f33450d23797757d430911a9320530ad8a0eabc43efb";
+		const signature1 = "0x187654321fedcba12987654321fedcba12987654321fedcba12987654321fedcba12987654321fedcba1254354321fedcba154321fedcba54321fedcba154321fedcba154321fedcba1154321fedcba154321fedcba154321fedcba121fedcba";
+        
+		// Mock for getCapellaForkInfo (when useCurrentForkVersion = false)
+		const capellaForkResponse = {
+			data: {
+				BELLATRIX_FORK_VERSION: "0x30000910",
+				CAPELLA_FORK_VERSION: "0x40000910",
+				CAPELLA_FORK_EPOCH: "0"
+			}
+		};
+        
+		mock.onGet(`${beaconNodeEndpoint}/eth/v1/config/spec`).reply(200, capellaForkResponse);
+		mock.onGet(`${beaconNodeEndpoint}/eth/v1/beacon/genesis`).reply(200, { data: { genesis_validators_root } });
+        
+		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key1`).reply(200, { signature: signature1 });
+        
+		const result = await signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, 0, false);
+        
+		expect(result).toEqual([
+			{
+				validator_index: 1,
+				validator_key: "key1",
+				signature: signature1,
+				fork_version: "0x40000910", // Should use CAPELLA_FORK_VERSION
+				epoch: epoch,
+			}
+		]);
+	});
+
+	test("Should sign all withdrawal messages successfully with getCapellaForkInfo (useCurrentForkVersion = false)", async () => {
+        
+		const validators = [
+			{ validatorIndex: 1, key: "key1" },
+			{ validatorIndex: 2, key: "key2" },
+		];
+        
+		const epoch = 1;
+		const remoteSignerUrl = "http://localhost:3001";
+		const beaconNodeEndpoint = "http://localhost:5052";
+        
+		const genesis_validators_root = "0x043db0d9a83813551ee2f33450d23797757d430911a9320530ad8a0eabc43efb";
+		const signature1 = "0x187654321fedcba12987654321fedcba12987654321fedcba12987654321fedcba12987654321fedcba1254354321fedcba154321fedcba54321fedcba154321fedcba154321fedcba1154321fedcba154321fedcba154321fedcba121fedcba";
+		const signature2 = "0x287654321fedcba12987654321fedcba12987654321fedcba12987654321fedcba12987654321fedcba1254354321fedcba154321fedcba54321fedcba154321fedcba154321fedcba1154321fedcba154321fedcba154321fedcba121fedcba";
+        
+		// Mock for getCapellaForkInfo (when useCurrentForkVersion = false)
+		const capellaForkResponse = {
+			data: {
+				BELLATRIX_FORK_VERSION: "0x30000910",
+				CAPELLA_FORK_VERSION: "0x40000910",
+				CAPELLA_FORK_EPOCH: "0"
+			}
+		};
+        
+		mock.onGet(`${beaconNodeEndpoint}/eth/v1/config/spec`).reply(200, capellaForkResponse);
+		mock.onGet(`${beaconNodeEndpoint}/eth/v1/beacon/genesis`).reply(200, { data: { genesis_validators_root } });
+        
+		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key1`).reply(200, { signature: signature1 });
+		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key2`).reply(200, { signature: signature2 });
+        
+		const result = await signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, 0, false);
+        
+		expect(result).toEqual([
+			{
+				validator_index: 1,
+				validator_key: "key1",
+				signature: signature1,
+				fork_version: "0x40000910", // Should use CAPELLA_FORK_VERSION
+				epoch: epoch,
+			},
+			{
+				validator_index: 2,
+				validator_key: "key2",
+				signature: signature2,
+				fork_version: "0x40000910", // Should use CAPELLA_FORK_VERSION
+				epoch: epoch,
+			}
+		]);
+	});
+
+	test("Should handle 404 not found from remote signer with getCapellaForkInfo (useCurrentForkVersion = false)", async () => {
+		const validators = [
+			{ validatorIndex: 1, key: "key1" },
+			{ validatorIndex: 2, key: "key2" },
+		];
+        
+		const epoch = 1;
+		const remoteSignerUrl = "http://localhost:3001";
+		const beaconNodeEndpoint = "http://localhost:5052";
+        
+		const genesis_validators_root = "0x043db0d9a83813551ee2f33450d23797757d430911a9320530ad8a0eabc43efb";
+		const signature1 = "0x187654321fedcba12987654321fedcba12987654321fedcba12987654321fedcba12987654321fedcba1254354321fedcba154321fedcba54321fedcba154321fedcba154321fedcba1154321fedcba154321fedcba154321fedcba121fedcba";
+        
+		// Mock for getCapellaForkInfo (when useCurrentForkVersion = false)
+		const capellaForkResponse = {
+			data: {
+				BELLATRIX_FORK_VERSION: "0x30000910",
+				CAPELLA_FORK_VERSION: "0x40000910",
+				CAPELLA_FORK_EPOCH: "0"
+			}
+		};
+        
+		mock.onGet(`${beaconNodeEndpoint}/eth/v1/config/spec`).reply(200, capellaForkResponse);
+		mock.onGet(`${beaconNodeEndpoint}/eth/v1/beacon/genesis`).reply(200, { data: { genesis_validators_root } });
+        
+		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key1`).reply(200, { signature: signature1 });
+		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key2`).reply(404);
+        
+		const result = await signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, 1, false);
+        
+		expect(result).toEqual([
+			{
+				validator_index: 1,
+				validator_key: "key1",
+				signature: signature1,
+				fork_version: "0x40000910", // Should use CAPELLA_FORK_VERSION
+				epoch: epoch,
+			}
+		]);
+        
 	});
 
 });

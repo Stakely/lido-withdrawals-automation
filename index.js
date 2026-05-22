@@ -1,5 +1,5 @@
 const inquirer = require("inquirer").default;
-const { percentageValidation, passwordValidation, outputFolderValidation, operatorIdValidation, urlValidation, moduleIdValidation, missingKeysToleranceValidation } = require("./src/utils/validations");
+const { percentageValidation, passwordValidation, outputFolderValidation, operatorIdValidation, urlValidation, moduleIdValidation, missingKeysToleranceValidation, booleanValidation } = require("./src/utils/validations");
 const { fetchValidatorsData } = require("./src/withdrawal/fetchValidatorsData");
 const { signWithdrawalMessages } = require("./src/withdrawal/signWithdrawalMessages");
 const { encryptMessages } = require("./src/withdrawal/encryptMessages");
@@ -10,7 +10,7 @@ require("dotenv").config();
 async function main() {
 
 	console.log("\n");
-	console.info("🚀 Lido Withdrawals Automation developed by Stakely.io - v1.1.0");
+	console.info("🚀 Lido Withdrawals Automation developed by Stakely.io - v1.3.0");
 	console.log("\n");
 	console.info("Step 1: Checking environment variables and asking for missing values...");
 
@@ -25,6 +25,7 @@ async function main() {
 		beaconNodeUrl: process.env.BEACON_NODE_URL,
 		moduleId: process.env.MODULE_ID,
 		missingKeysTolerance: process.env.MISSING_KEYS_TOLERANCE,
+		useCurrentForkVersion: process.env.USE_CURRENT_FORK_VERSION,
 	};
 
 	// Validate environment variables
@@ -45,6 +46,7 @@ async function main() {
 			beaconNodeUrl: urlValidation,
 			moduleId: moduleIdValidation,
 			missingKeysTolerance: missingKeysToleranceValidation,
+			useCurrentForkVersion: booleanValidation,
 		}[key];
 
 		const validationResult = validationFunction(value);
@@ -145,6 +147,7 @@ async function main() {
 		beaconNodeUrl: env.beaconNodeUrl || answers.beaconNodeUrl,
 		moduleId: env.moduleId || answers.moduleId,
 		missingKeysTolerance: env.missingKeysTolerance || 0,
+		useCurrentForkVersion: env.useCurrentForkVersion === "true",
 	};
 
 	// Get validators data from Kapi
@@ -164,7 +167,8 @@ async function main() {
 		kapiJsonResponse.meta.clBlockSnapshot.epoch, // Epoch from Kapi
 		params.remoteSignerUrl, // Remote signer URL
 		params.beaconNodeUrl, // Beacon node URL
-		params.missingKeysTolerance // Missing keys tolerance
+		params.missingKeysTolerance, // Missing keys tolerance
+		params.useCurrentForkVersion // Use current fork version instead of Capella
 	);
 
 	console.log("\n");

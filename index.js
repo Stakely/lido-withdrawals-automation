@@ -147,7 +147,7 @@ async function main() {
 		beaconNodeUrl: env.beaconNodeUrl || answers.beaconNodeUrl,
 		moduleId: env.moduleId || answers.moduleId,
 		missingKeysTolerance: env.missingKeysTolerance || 0,
-		useCurrentForkVersion: env.useCurrentForkVersion || false,
+		useCurrentForkVersion: env.useCurrentForkVersion === "true",
 	};
 
 	// Get validators data from Kapi
@@ -167,8 +167,8 @@ async function main() {
 		kapiJsonResponse.meta.clBlockSnapshot.epoch, // Epoch from Kapi
 		params.remoteSignerUrl, // Remote signer URL
 		params.beaconNodeUrl, // Beacon node URL
-		params.missingKeysTolerance // Missing keys tolerance
-
+		params.missingKeysTolerance, // Missing keys tolerance
+		params.useCurrentForkVersion // Use current fork version instead of Capella
 	);
 
 	console.log("\n");

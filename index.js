@@ -1,5 +1,6 @@
 const inquirer = require("inquirer").default;
-const { percentageValidation, passwordValidation, outputFolderValidation, operatorIdValidation, urlValidation, moduleIdValidation, missingKeysToleranceValidation, booleanValidation } = require("./src/utils/validations");
+const { percentageValidation, passwordValidation, outputFolderValidation, operatorIdValidation, urlValidation, moduleIdValidation, missingKeysToleranceValidation, booleanValidation, withdrawalsScopeValidation } = require("./src/utils/validations");
+const { resolveScope, buildScopeFromSinglePair, expandScope } = require("./src/utils/scope");
 const { fetchValidatorsData } = require("./src/withdrawal/fetchValidatorsData");
 const { signWithdrawalMessages } = require("./src/withdrawal/signWithdrawalMessages");
 const { encryptMessages } = require("./src/withdrawal/encryptMessages");
@@ -10,7 +11,7 @@ require("dotenv").config();
 async function main() {
 
 	console.log("\n");
-	console.info("🚀 Lido Withdrawals Automation developed by Stakely.io - v1.3.0");
+	console.info("🚀 Lido Withdrawals Automation developed by Stakely.io - v1.4.0");
 	console.log("\n");
 	console.info("Step 1: Checking environment variables and asking for missing values...");
 
@@ -24,6 +25,7 @@ async function main() {
 		operatorId: process.env.OPERATOR_ID,
 		beaconNodeUrl: process.env.BEACON_NODE_URL,
 		moduleId: process.env.MODULE_ID,
+		withdrawalsScope: process.env.WITHDRAWALS_SCOPE,
 		missingKeysTolerance: process.env.MISSING_KEYS_TOLERANCE,
 		useCurrentForkVersion: process.env.USE_CURRENT_FORK_VERSION,
 	};
@@ -45,6 +47,7 @@ async function main() {
 			operatorId: operatorIdValidation,
 			beaconNodeUrl: urlValidation,
 			moduleId: moduleIdValidation,
+			withdrawalsScope: withdrawalsScopeValidation,
 			missingKeysTolerance: missingKeysToleranceValidation,
 			useCurrentForkVersion: booleanValidation,
 		}[key];
@@ -59,17 +62,18 @@ async function main() {
 		}
 	}
 
+	// Resolve the withdrawals scope from the environment variables.
+	// Returns null when there is not enough information and we must ask for a
+	// single module/operator/percentage interactively.
+	let scope = resolveScope({
+		withdrawalsScope: env.withdrawalsScope,
+		moduleId: env.moduleId,
+		operatorId: env.operatorId,
+		percentage: env.percentage,
+	});
+
 	// Ask for missing values
 	const questions = [];
-
-	if (!env.percentage) {
-		questions.push({
-			type: "input",
-			name: "percentage",
-			message: "Please enter the percentage of validators (1 to 100):",
-			validate: percentageValidation,
-		});
-	}
 
 	if (!env.kapiUrl) {
 		questions.push({
@@ -107,15 +111,6 @@ async function main() {
 		});
 	}
 
-	if (!env.operatorId) {
-		questions.push({
-			type: "input",
-			name: "operatorId",
-			message: "Please enter the operator ID:",
-			validate: operatorIdValidation,
-		});
-	}
-
 	if (!env.beaconNodeUrl) {
 		questions.push({
 			type: "input",
@@ -125,57 +120,90 @@ async function main() {
 		});
 	}
 
-	if (!env.moduleId) {
+	// If no scope could be resolved from the environment, ask for a single
+	// module/operator/percentage and build a one-pair scope from the answers.
+	if (scope === null) {
 		questions.push({
 			type: "input",
 			name: "moduleId",
 			message: "Please enter the module ID:",
 			validate: moduleIdValidation,
 		});
+		questions.push({
+			type: "input",
+			name: "operatorId",
+			message: "Please enter the operator ID:",
+			validate: operatorIdValidation,
+		});
+		questions.push({
+			type: "input",
+			name: "percentage",
+			message: "Please enter the percentage of validators (1 to 100):",
+			validate: percentageValidation,
+		});
 	}
 
 	const answers = await inquirer.prompt(questions);
 
+	if (scope === null) {
+		scope = buildScopeFromSinglePair(answers.moduleId, answers.operatorId, answers.percentage);
+	}
+
 	// Combine environment variables and answers or default values.
 	const params = {
-		percentage: env.percentage || answers.percentage,
 		kapiUrl: env.kapiUrl || answers.kapiUrl,
 		remoteSignerUrl: env.remoteSignerUrl || answers.remoteSignerUrl,
 		password: env.password || answers.password,
-		operatorId: env.operatorId || answers.operatorId,
 		outputFolder: env.outputFolder || answers.outputFolder,
 		beaconNodeUrl: env.beaconNodeUrl || answers.beaconNodeUrl,
-		moduleId: env.moduleId || answers.moduleId,
 		missingKeysTolerance: env.missingKeysTolerance || 0,
 		useCurrentForkVersion: env.useCurrentForkVersion === "true",
 	};
 
-	// Get validators data from Kapi
-	console.log("Step 2: Fetching validators data from Kapi...");
+	// Expand the scope into the list of (module, operator, percent) pairs to process.
+	const pairs = expandScope(scope);
 
-	const kapiJsonResponse = await fetchValidatorsData(
-		params.kapiUrl, // Kapi URL
-		params.moduleId, // Module ID
-		params.operatorId, // Operator ID
-		params.percentage // Percentage of validators
-	);
+	// Process every pair (fetch + sign). Signatures are accumulated and encrypted
+	// once at the end, so if any pair fails the whole process aborts without
+	// writing partial output.
+	const allSignatures = [];
+	let pairIndex = 0;
 
-	console.log("Step 3: Creating the withdrawal messages and signing them with the remote signer...");
+	for (const { moduleId, operatorId, percent } of pairs) {
+		pairIndex++;
+		console.log("\n");
+		console.log(`================= [ PAIR ${pairIndex}/${pairs.length} ] =================`);
+		console.log(`Module: ${moduleId}   Operator Id: ${operatorId}   Percent: ${percent}%`);
 
-	const signatures = await signWithdrawalMessages(
-		kapiJsonResponse.data, // Validators data (public keys)
-		kapiJsonResponse.meta.clBlockSnapshot.epoch, // Epoch from Kapi
-		params.remoteSignerUrl, // Remote signer URL
-		params.beaconNodeUrl, // Beacon node URL
-		params.missingKeysTolerance, // Missing keys tolerance
-		params.useCurrentForkVersion // Use current fork version instead of Capella
-	);
+		// Get validators data from Kapi
+		console.log("Step 2: Fetching validators data from Kapi...");
+
+		const kapiJsonResponse = await fetchValidatorsData(
+			params.kapiUrl, // Kapi URL
+			moduleId, // Module ID
+			operatorId, // Operator ID
+			percent // Percentage of validators for this operator
+		);
+
+		console.log("Step 3: Creating the withdrawal messages and signing them with the remote signer...");
+
+		const signatures = await signWithdrawalMessages(
+			kapiJsonResponse.data, // Validators data (public keys)
+			kapiJsonResponse.meta.clBlockSnapshot.epoch, // Epoch from Kapi
+			params.remoteSignerUrl, // Remote signer URL
+			params.beaconNodeUrl, // Beacon node URL
+			params.missingKeysTolerance, // Missing keys tolerance
+			params.useCurrentForkVersion // Use current fork version instead of Capella
+		);
+
+		allSignatures.push(...signatures);
+	}
 
 	console.log("\n");
 	console.log("Step 4: Encrypt the signed messages with the password file and save them to the output folder...");
 
 	await encryptMessages(
-		signatures, // Signed messages
+		allSignatures, // Signed messages from every pair
 		params.outputFolder, // Output folder
 		params.password, // File with the password
 	);

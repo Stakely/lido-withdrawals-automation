@@ -8,6 +8,7 @@ const {
 	passwordValidation,
 	moduleIdValidation,
 	missingKeysToleranceValidation,
+	withdrawalsScopeValidation,
 } = require("../src/utils/validations.js");
 
 jest.mock("fs");
@@ -101,5 +102,67 @@ describe("missingKeysToleranceValidation", () => {
 		expect(missingKeysToleranceValidation("abc")).toBe("Please enter a valid integer greater than or equal to 0 for the missing keys tolerance.");
 		expect(missingKeysToleranceValidation("1.5")).toBe("Please enter a valid integer greater than or equal to 0 for the missing keys tolerance.");
 		expect(missingKeysToleranceValidation("10.0")).toBe("Please enter a valid integer greater than or equal to 0 for the missing keys tolerance.");
+	});
+});
+
+describe("withdrawalsScopeValidation", () => {
+	test("should return true for a valid scope", () => {
+		expect(withdrawalsScopeValidation("{\"1\":[{\"id\":123,\"percent\":50}]}")).toBe(true);
+	});
+
+	test("should return true for multiple modules and operators", () => {
+		expect(withdrawalsScopeValidation("{\"1\":[{\"id\":123,\"percent\":50}],\"4\":[{\"id\":0,\"percent\":10},{\"id\":1,\"percent\":100}]}")).toBe(true);
+	});
+
+	test("should allow operator id 0", () => {
+		expect(withdrawalsScopeValidation("{\"1\":[{\"id\":0,\"percent\":10}]}")).toBe(true);
+	});
+
+	test("should return error message for invalid JSON", () => {
+		expect(withdrawalsScopeValidation("{\"1\":[")).toBe("WITHDRAWALS_SCOPE is not valid JSON. Expected format: {\"1\":[{\"id\":123,\"percent\":50}]}.");
+		expect(withdrawalsScopeValidation("not json")).toBe("WITHDRAWALS_SCOPE is not valid JSON. Expected format: {\"1\":[{\"id\":123,\"percent\":50}]}.");
+	});
+
+	test("should return error message when not a plain object", () => {
+		const error = "WITHDRAWALS_SCOPE must be a JSON object mapping staking module IDs to operator arrays.";
+		expect(withdrawalsScopeValidation("[1,2]")).toBe(error);
+		expect(withdrawalsScopeValidation("\"5\"")).toBe(error);
+		expect(withdrawalsScopeValidation("null")).toBe(error);
+	});
+
+	test("should return error message for an empty object", () => {
+		expect(withdrawalsScopeValidation("{}")).toBe("WITHDRAWALS_SCOPE cannot be empty. Define at least one staking module with one operator.");
+	});
+
+	test("should return error message for an empty module ID key", () => {
+		expect(withdrawalsScopeValidation("{\"\":[{\"id\":1,\"percent\":10}]}")).toBe("WITHDRAWALS_SCOPE staking module ID cannot be empty.");
+	});
+
+	test("should return error message when a module does not map to a non-empty array", () => {
+		expect(withdrawalsScopeValidation("{\"1\":5}")).toBe("Module 1 must map to a non-empty array of operators.");
+		expect(withdrawalsScopeValidation("{\"1\":[]}")).toBe("Module 1 must map to a non-empty array of operators.");
+	});
+
+	test("should return error message when an operator is not an object", () => {
+		expect(withdrawalsScopeValidation("{\"1\":[123]}")).toBe("Each operator in module 1 must be an object with \"id\" and \"percent\".");
+	});
+
+	test("should return error message for an invalid operator id", () => {
+		expect(withdrawalsScopeValidation("{\"1\":[{\"id\":1.5,\"percent\":10}]}")).toBe("Operator id 1.5 in module 1 must be an integer greater than or equal to 0.");
+		expect(withdrawalsScopeValidation("{\"1\":[{\"id\":-1,\"percent\":10}]}")).toBe("Operator id -1 in module 1 must be an integer greater than or equal to 0.");
+		expect(withdrawalsScopeValidation("{\"1\":[{\"id\":\"a\",\"percent\":10}]}")).toBe("Operator id a in module 1 must be an integer greater than or equal to 0.");
+		expect(withdrawalsScopeValidation("{\"1\":[{\"percent\":10}]}")).toBe("Operator id undefined in module 1 must be an integer greater than or equal to 0.");
+	});
+
+	test("should return error message for an invalid percent", () => {
+		expect(withdrawalsScopeValidation("{\"1\":[{\"id\":1,\"percent\":0}]}")).toBe("percent 0 for operator 1 in module 1 must be an integer between 1 and 100.");
+		expect(withdrawalsScopeValidation("{\"1\":[{\"id\":1,\"percent\":101}]}")).toBe("percent 101 for operator 1 in module 1 must be an integer between 1 and 100.");
+		expect(withdrawalsScopeValidation("{\"1\":[{\"id\":1,\"percent\":50.5}]}")).toBe("percent 50.5 for operator 1 in module 1 must be an integer between 1 and 100.");
+		expect(withdrawalsScopeValidation("{\"1\":[{\"id\":1,\"percent\":\"x\"}]}")).toBe("percent x for operator 1 in module 1 must be an integer between 1 and 100.");
+		expect(withdrawalsScopeValidation("{\"1\":[{\"id\":1}]}")).toBe("percent undefined for operator 1 in module 1 must be an integer between 1 and 100.");
+	});
+
+	test("should return error message for a duplicated operator id in a module", () => {
+		expect(withdrawalsScopeValidation("{\"1\":[{\"id\":1,\"percent\":10},{\"id\":1,\"percent\":20}]}")).toBe("Operator id 1 is duplicated in module 1.");
 	});
 });

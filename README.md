@@ -48,30 +48,45 @@ npm install
 Create a `.env` file in the project root folder and set the following environment variables:
 
 ```
-PERCENTAGE=<percentage_of_validators_to_withdraw>
+WITHDRAWALS_SCOPE=<modules_to_operators_mapping>
 KAPI_URL=<kapi_endpoint_url>
 REMOTE_SIGNER_URL=<remote_signer_url>
 PASSWORD=<password_to_encrypt_signed_messages>
 OUTPUT_FOLDER=<path_to_output_folder>
-OPERATOR_ID=<operator_id>
 BEACON_NODE_URL=<beacon_node_url>
-MODULE_ID=<module_id>
 MISSING_KEYS_TOLERANCE=<missing_keys_tolerance>
 ```
 
 Replace the placeholders with your actual values. For example:
 
 ```
-PERCENTAGE=10
+WITHDRAWALS_SCOPE={"1":[{"id":123,"percent":50}],"4":[{"id":0,"percent":10},{"id":1,"percent":10}]}
 KAPI_URL=https://example.com/kapi
 REMOTE_SIGNER_URL=https://remotesigner.local:8080
 PASSWORD=mysecretpassword
 OUTPUT_FOLDER=/path/to/your/output-folder
-OPERATOR_ID=123
 BEACON_NODE_URL=http://localhost:5052
-MODULE_ID=1
 MISSING_KEYS_TOLERANCE=0
 ```
+
+### `WITHDRAWALS_SCOPE`
+
+`WITHDRAWALS_SCOPE` lets you process several staking modules and operators in a single run. It is a JSON object where:
+
+- The **key** is the staking module ID.
+- The **value** is a non-empty array of operators, each one an object with:
+  - `id`: the operator ID, an integer `>= 0` (`0` is allowed).
+  - `percent`: the percentage of that operator's validators to withdraw, an integer between `1` and `100`.
+
+Each module/operator pair is fetched from the KAPI independently with its own `percent`, so `WITHDRAWALS_SCOPE={"1":[{"id":123,"percent":50}],"4":[{"id":0,"percent":10}]}` withdraws 50% of operator 123 in module 1 and 10% of operator 0 in module 4.
+
+`MISSING_KEYS_TOLERANCE` is global and applied per pair. The output stays flat in `OUTPUT_FOLDER` (file names are unchanged). Signatures are encrypted once at the end, so if any pair fails the whole process aborts without writing partial output.
+
+### Deprecated variables
+
+`MODULE_ID`, `OPERATOR_ID` and `PERCENTAGE` are deprecated and will be removed in a future version. They still work as a single-pair fallback: when all three are set (and `WITHDRAWALS_SCOPE` is not), the tool prints a deprecation warning and maps them internally to `{"<MODULE_ID>":[{"id":<OPERATOR_ID>,"percent":<PERCENTAGE>}]}`. Note the legacy `OPERATOR_ID` still requires a value `> 0`, while `WITHDRAWALS_SCOPE` allows operator `id` `0`.
+
+Setting `WITHDRAWALS_SCOPE` **together with** any of `MODULE_ID`/`OPERATOR_ID`/`PERCENTAGE` makes the tool exit with an error: use only one of the two approaches.
 
 ## Usage
 
@@ -81,7 +96,7 @@ Run the script using the following command:
 npm start
 ```
 
-The script will check the environment variables and prompt you for any missing values. After providing the required information, the script will fetch validator data, create withdrawal messages, sign them, encrypt the signed messages, and save them to the output folder.
+The script will check the environment variables and prompt you for any missing values. If neither `WITHDRAWALS_SCOPE` nor the deprecated trio is set, the interactive prompts ask for a single module ID, operator ID and percentage. After providing the required information, the script will fetch validator data, create withdrawal messages, sign them, encrypt the signed messages, and save them to the output folder.
 
 ## Contributing
 

@@ -6,12 +6,13 @@ const { signWithdrawalMessages } = require("./src/withdrawal/signWithdrawalMessa
 const { encryptMessages } = require("./src/withdrawal/encryptMessages");
 
 // Load environment variables from the .env file
-require("dotenv").config();
+// quiet: true avoids the dotenv startup banner polluting the CLI output
+require("dotenv").config({ quiet: true });
 
 async function main() {
 
 	console.log("\n");
-	console.info("🚀 Lido Withdrawals Automation developed by Stakely.io - v1.4.0");
+	console.info("🚀 Lido Withdrawals Automation developed by Stakely.io - v1.4.1");
 	console.log("\n");
 	console.info("Step 1: Checking environment variables and asking for missing values...");
 

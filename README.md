@@ -18,7 +18,8 @@ Lido Withdrawals Automation is a command-line tool that assists with the LIDO va
 
 ## Prerequisites
 
-- Node.js >= v18.x
+- Node.js >= v22.x
+- pnpm (the repository pins the version in the `packageManager` field, so `corepack enable` is enough)
 - Access to a local kAPI endpoint
 - Access to a web3 remote signer endpoint
 - Access to a beacon node endpoint
@@ -40,7 +41,7 @@ cd lido-withdrawals-automation
 3. Install the dependencies:
 
 ```bash
-npm install
+pnpm install
 ```
 
 ## Configuration
@@ -93,7 +94,7 @@ Setting `WITHDRAWALS_SCOPE` **together with** any of `MODULE_ID`/`OPERATOR_ID`/`
 Run the script using the following command:
 
 ```bash
-npm start
+pnpm start
 ```
 
 The script will check the environment variables and prompt you for any missing values. If neither `WITHDRAWALS_SCOPE` nor the deprecated trio is set, the interactive prompts ask for a single module ID, operator ID and percentage. After providing the required information, the script will fetch validator data, create withdrawal messages, sign them, encrypt the signed messages, and save them to the output folder.

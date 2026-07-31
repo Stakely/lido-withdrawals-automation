@@ -1,4 +1,3 @@
-/* eslint-disable no-undef */
 const MockAdapter = require("axios-mock-adapter");
 const { getStateRoot, getForkInfo, getCapellaForkInfo, getGenesisValidatorsRoot, buildRemoteSignerUrl, createRemoteSignerRequestBody, requestValidatorSignature, signWithdrawalMessages } = require("../src/withdrawal/signWithdrawalMessages.js");
 const axiosInstance = require("../src/utils/axiosInstance.js");
@@ -563,7 +562,7 @@ describe("signWithdrawalMessages", () => {
         
 		mock.onPost(`${remoteSignerUrl}/api/v1/eth2/sign/key1`).reply(200, { signature: invalidSignature });
         
-		await expect(signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, 0, true)).rejects.toThrowError("Remote signer is not returning a valid signature.");
+		await expect(signWithdrawalMessages(validators, epoch, remoteSignerUrl, beaconNodeEndpoint, 0, true)).rejects.toThrow("Remote signer is not returning a valid signature.");
 	});
     
 });

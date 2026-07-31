@@ -1,5 +1,15 @@
 overrides:
-  ws: "^8.20.1"
+  # Avisos de seguridad en dependencias transitivas que sus paquetes padre
+  # todavía no han subido.
+  ws: "^8.21.0"                 # GHSA ws <8.21.0 (ethers)
+  form-data: "^4.0.6"           # CRLF injection (axios)
+  uuid: "^11.1.1"               # bounds check en v3/v5/v6 (@chainsafe/bls-keystore)
+  js-yaml@3: "^3.15.0"          # DoS merge keys (jest > babel-plugin-istanbul)
+  # Versión exacta a propósito: el metadata de brace-expansion no publica el
+  # campo "time", así que pnpm no puede aplicarle minimumReleaseAge y un rango
+  # abierto instalaría releases recién publicadas.
+  brace-expansion@1: "1.1.16"   # DoS expansión exponencial (jest > glob)
+  "@babel/core": "^7.29.1"      # lectura arbitraria vía sourceMappingURL (jest)
 minimumReleaseAge: 10080
 minimumReleaseAgeExclude:
   - "@types/node"
@@ -11,6 +21,9 @@ minimumReleaseAgeExclude:
   - "baseline-browser-mapping"
   - "caniuse-lite"
   - "electron-to-chromium"
-  - "eslint"
 packageManagerStrict: true
 engineStrict: true
+allowBuilds:
+  # Los bindings nativos llegan precompilados como optionalDependencies,
+  # no hace falta compilar nada en el install.
+  unrs-resolver: false

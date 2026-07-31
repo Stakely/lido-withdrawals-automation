@@ -1,4 +1,3 @@
-/* eslint-disable no-undef */
 const { buildFullMessage, encryptJsonMessage, saveEncryptedMessageToFile, overwritePrompt } = require("../src/withdrawal/encryptMessages");
 const { decrypt } = require("@chainsafe/bls-keystore");
 const inquirer = require("inquirer").default;

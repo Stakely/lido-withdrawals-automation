@@ -1,4 +1,3 @@
-/* eslint-disable no-undef */
 const { buildKapiUrl, fetchDataFromKAPI, validateKapiJsonResponse } = require("../src/withdrawal/fetchValidatorsData.js");
 const MockAdapter = require("axios-mock-adapter");
 const axiosInstance = require("../src/utils/axiosInstance.js");
@@ -41,9 +40,7 @@ describe("validateKapiJsonResponse", () => {
 			},
 		};
         
-		await expect(async () => {
-			await validateKapiJsonResponse(validKapiJsonResponse);
-		}).not.toThrowError();
+		await expect(validateKapiJsonResponse(validKapiJsonResponse)).resolves.not.toThrow();
 	});
     
     

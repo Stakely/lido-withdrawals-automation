@@ -40,7 +40,7 @@ describe("validateKapiJsonResponse", () => {
 			},
 		};
         
-		await expect(validateKapiJsonResponse(validKapiJsonResponse)).resolves.not.toThrow();
+		await expect(validateKapiJsonResponse(validKapiJsonResponse)).resolves.toBeUndefined();
 	});
     
     

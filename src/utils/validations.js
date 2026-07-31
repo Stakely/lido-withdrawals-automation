@@ -5,7 +5,7 @@ function isValidUrl(inputUrl) {
 	try {
 		const parsedUrl = new url.URL(inputUrl);
 		return ["http:", "https:"].includes(parsedUrl.protocol);
-	} catch (error) {
+	} catch {
 		return false;
 	}
 }
@@ -66,7 +66,7 @@ function withdrawalsScopeValidation(value) {
 	let scope;
 	try {
 		scope = JSON.parse(value);
-	} catch (error) {
+	} catch {
 		return "WITHDRAWALS_SCOPE is not valid JSON. Expected format: {\"1\":[{\"id\":123,\"percent\":50}]}.";
 	}
 

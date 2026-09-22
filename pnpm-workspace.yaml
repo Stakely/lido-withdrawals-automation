@@ -18,17 +18,17 @@ overrides:
 # permanente en la politica: antes dejaba entrar baseline-browser-mapping
 # publicado hacia 4 dias.
 #
-# Si pnpm avisa de que a un paquete le falta el campo "time" y se salta la
-# comprobacion, NO es que el registry no lo publique: es que pnpm pidio el
-# metadata abreviado, que no lo incluye. Lo arregla registrySupportsTimeField
-# (abajo) mas `pnpm cache delete <paquete>` si quedo metadata viejo cacheado.
-# Nunca se arregla excluyendo el paquete ni bajando minimumReleaseAge.
+# Si un install se para con ERR_PNPM_MISSING_TIME, no es que el registry no
+# publique el campo "time": es que quedo cacheado un metadata abreviado, que no
+# lo incluye. Se arregla con `pnpm cache delete <paquete>`, nunca excluyendo el
+# paquete ni bajando minimumReleaseAge.
 minimumReleaseAge: 10080
-# Obliga a pedir el metadata COMPLETO del registry. El abreviado que pnpm usa
-# por defecto no trae el campo "time", y sin el pnpm se salta la cuarentena
-# con un simple WARN. Sin esto la politica es parcial y silenciosamente laxa.
-registrySupportsTimeField: true
-# Y si aun asi falta, fallar en vez de saltarse la comprobacion en silencio.
+
+# El default de pnpm para esta opcion es `true`, y con `true` pnpm no falla
+# cuando el metadata de un paquete no trae el campo "time": avisa con un WARN
+# ("skipping the minimumReleaseAge check for this package") e instala esa
+# version sin comprobar su edad. En false la politica es fail-closed: si no se
+# puede verificar la edad, el install se para en vez de seguir.
 minimumReleaseAgeIgnoreMissingTime: false
 packageManagerStrict: true
 engineStrict: true

@@ -1,29 +1,37 @@
 overrides:
   # Avisos de seguridad en dependencias transitivas que sus paquetes padre
   # todavía no han subido.
-  ws: "^8.21.0"                 # GHSA ws <8.21.0 (ethers)
-  form-data: "^4.0.6"           # CRLF injection (axios)
-  uuid: "^11.1.1"               # bounds check en v3/v5/v6 (@chainsafe/bls-keystore)
-  js-yaml@3: "^3.15.0"          # DoS merge keys (jest > babel-plugin-istanbul)
-  # Versión exacta a propósito: el metadata de brace-expansion no publica el
-  # campo "time", así que pnpm no puede aplicarle minimumReleaseAge y un rango
-  # abierto instalaría releases recién publicadas.
-  brace-expansion@1: "1.1.16"   # DoS expansión exponencial (jest > glob)
-  "@babel/core": "^7.29.1"      # lectura arbitraria vía sourceMappingURL (jest)
+  ws: "^8.21.0" # GHSA ws <8.21.0 (ethers)
+  form-data: "^4.0.6" # CRLF injection (axios)
+  uuid: "^11.1.1" # bounds check en v3/v5/v6 (@chainsafe/bls-keystore)
+  js-yaml@3: "^3.15.2" # DoS merge keys + CPU cuadratico en !!omap (jest > babel-plugin-istanbul)
+  brace-expansion@1: "^1.1.18" # DoS expansion exponencial + OOM (jest > glob)
+  brace-expansion@2: "^2.1.4" # DoS expansion exponencial + OOM (jest > glob > minimatch)
+  brace-expansion@5: "^5.0.9" # DoS arrays intermedios sin limite (eslint > minimatch)
+  browserslist: "^4.28.7" # OOM por cache sin eviccion + crash via browserslist-stats.json (jest > @babel/core)
+  baseline-browser-mapping: "^2.11.0" # DoS por terminacion de proceso con entrada invalida (jest > browserslist)
+  "@babel/core": "^7.29.1" # lectura arbitraria via sourceMappingURL (jest)
+# Cuarentena de supply chain: no instalar nada publicado hace menos de 7 dias.
+# 7 * 24 * 60 = 10080 minutos. No se desactiva ni se reduce.
+#
+# Sin minimumReleaseAgeExclude a proposito. Cada exclusion es un agujero
+# permanente en la politica: antes dejaba entrar baseline-browser-mapping
+# publicado hacia 4 dias.
+#
+# Si pnpm avisa de que a un paquete le falta el campo "time" y se salta la
+# comprobacion, NO es que el registry no lo publique: es que pnpm pidio el
+# metadata abreviado, que no lo incluye. Lo arregla registrySupportsTimeField
+# (abajo) mas `pnpm cache delete <paquete>` si quedo metadata viejo cacheado.
+# Nunca se arregla excluyendo el paquete ni bajando minimumReleaseAge.
 minimumReleaseAge: 10080
-minimumReleaseAgeExclude:
-  - "@types/node"
-  - "undici-types"
-  - "resolve"
-  - "lru-cache"
-  - "@jridgewell/gen-mapping"
-  - "@jridgewell/sourcemap-codec"
-  - "baseline-browser-mapping"
-  - "caniuse-lite"
-  - "electron-to-chromium"
+# Obliga a pedir el metadata COMPLETO del registry. El abreviado que pnpm usa
+# por defecto no trae el campo "time", y sin el pnpm se salta la cuarentena
+# con un simple WARN. Sin esto la politica es parcial y silenciosamente laxa.
+registrySupportsTimeField: true
 packageManagerStrict: true
 engineStrict: true
 allowBuilds:
   # Los bindings nativos llegan precompilados como optionalDependencies,
   # no hace falta compilar nada en el install.
   unrs-resolver: false
+  "@parcel/watcher": false   # llega via jest 30.5.x

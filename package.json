@@ -1,6 +1,6 @@
 {
   "name": "lido-withdrawals-automation",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Lido Withdrawals Automation is a command-line tool that assists with the LIDO validators withdrawal process. The tool streamlines the procedure by fetching validators data, generating withdrawal messages, signing them with a remote signer, encrypting the signed messages, and saving them to the output folder.",
   "main": "index.js",
   "scripts": {
@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@chainsafe/bls-keystore": "^3.1.0",
-    "axios": "^1.18.1",
+    "axios": "^1.20.0",
     "dotenv": "^17.4.2",
     "ethers": "^6.17.0",
     "inquirer": "^12.11.1",
@@ -26,8 +26,8 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "axios-mock-adapter": "^2.1.0",
-    "eslint": "^10.7.0",
-    "globals": "^17.7.0",
-    "jest": "^30.4.2"
+    "eslint": "^10.10.0",
+    "globals": "^17.12.0",
+    "jest": "^30.5.1"
   }
 }
